@@ -1,0 +1,126 @@
+Sexe: F
+Prenom: Zentrix
+Nom: Sybretec
+Pseudo: Zent
+Define: Zentrix est l'héroïne d'apocalyptic
+Age: 15
+Taille: 175
+Poids: 65
+SkinColor: blanc
+HairColor: fuscia
+EyeColor: bleu
+Ident: Zentrix Sybretec 0
+______________________________
+
+Sexe: M
+Prenom: Sam
+Nom: Dogangs
+Pseudo: Samy
+Define: Sam est un ami de Zentrix
+Age: 15
+Taille: 185
+Poids: 80
+SkinColor: métis
+HairColor: noir
+EyeColor: marron
+Ident: Sam Dogangs 0
+______________________________
+
+Sexe: M
+Prenom: Mooney
+Nom: Loft
+Pseudo: Moon
+Define: Mooney est un ami de Zentrix
+Age: 15
+Taille: 185
+Poids: 80
+SkinColor: blanc
+HairColor: rouge
+EyeColor: bleu
+Ident: Mooney Loft 0
+______________________________
+
+Sexe: M
+Prenom: Kawen
+Nom: Mitchai
+Pseudo: Silver
+Define: Kawen est un ami de Mathieu
+Age: 22
+Taille: 175
+Poids: 65
+SkinColor: noir
+HairColor: noir
+EyeColor: noir
+Ident: Kawen Mitchai 0
+______________________________
+
+Sexe: F
+Prenom: Pauline
+Nom: Delnaud
+Pseudo: Popo
+Define: Pauline est la copine de Mathieu
+Age: 25
+Taille: 162
+Poids: 60
+SkinColor: blanc
+HairColor: noir
+EyeColor: vert
+Ident: Pauline Delnaud 0
+______________________________
+
+Sexe: M
+Prenom: Fabien
+Nom: Fargere
+Pseudo: Echecs
+Define: Fabien est un pote de Mathieu
+Age: 26
+Taille: 175
+Poids: 66
+SkinColor: blanc
+HairColor: noir
+EyeColor: marron
+Ident: Fabien Fargere 0
+______________________________
+
+Sexe: M
+Prenom: Florian
+Nom: Champeaux
+Pseudo: flo
+Define: Florian est un étudiant de sociologie
+Age: 24
+Taille: 180
+Poids: 70
+SkinColor: blanc
+HairColor: brun
+EyeColor: bleu
+Ident: florian champeaux 0
+______________________________
+
+Sexe: M
+Prenom: Ilassa
+Nom: Niampa
+Pseudo: Ilassa
+Define: Ilassa est un habitant du foyer
+Age: 21
+Taille: 173
+Poids: 70
+SkinColor: noir
+HairColor: noir
+EyeColor: noir
+Ident: Ilassa Niampa 0
+______________________________
+
+Sexe: M
+Prenom: Matthieu
+Nom: Izambert
+Pseudo: MWhite
+Define: Matthieu est un pote de Mathieu
+Age: 24
+Taille: 175
+Poids: 80
+SkinColor: blanc
+HairColor: noir
+EyeColor: vert
+Ident: Matthieu Izambert 0
+______________________________
+
