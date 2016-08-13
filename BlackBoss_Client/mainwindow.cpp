@@ -6,8 +6,7 @@
 using namespace std;
 
 MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    QMainWindow(parent)
 {
     ui->setupUi(this);
     ok=false;

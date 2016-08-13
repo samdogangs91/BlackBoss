@@ -1,0 +1,27 @@
+/*methode type::=*/
+name: "type::="
+argT: "type;type"
+retourT: ""
+prior: 15
+assoc: "gauche"
+cont:
+/*void type::=(type arg[0],type arg[1] ) ->arg[0]=arg[1]*/
+{
+	If(arg.size()==2 && retour.size()==0; 
+		If(arg[0]->type->name==arg[1]->type->name;
+			arg[0]->setValue(arg[1])
+		;)
+	 ;);	
+}
+
+/*methode &&*/
+name: "&&"
+argT: "bool;bool;"
+retourT: "bool;"
+prior: 13
+assoc: "droite"
+cont:
+{
+	If(arg.size()==2 && retour.size()==1; ;);
+}
+

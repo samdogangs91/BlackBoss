@@ -1,7 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
+#include <QWidget>
+#include "ui_connexion.h"
 
 namespace Ui {
 class MainWindow;
@@ -20,7 +21,7 @@ public slots:
     void connexion();
     
 private:
-    Ui::MainWindow *ui;
+    Ui::fenConnexion *ui;
 };
 
 #endif // MAINWINDOW_H

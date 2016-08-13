@@ -7,15 +7,18 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     mainwindow.cpp \
-    fenclient.cpp
+    fenclient.cpp \
+    fenconnexion.cpp
 
 HEADERS += \
     mainwindow.h \
-    fenclient.h
+    fenclient.h \
+    fenconnexion.h
 
 FORMS += \
     connexion.ui \
-    FenClient.ui
+    FenClient.ui \
+    fenconnexion.ui
 
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/./release/ -lmysqlclient
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/./debug/ -lmysqlclient

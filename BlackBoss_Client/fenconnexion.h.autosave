@@ -1,0 +1,37 @@
+#ifndef FENCONNEXION_H
+#define FENCONNEXION_H
+
+#include <QWidget>
+#include "ui_fenconnexion.h"
+#include <QShortcut>
+#include <QtNetwork>
+
+class fenConnexion: public QWidget, private Ui::fenConnexion
+{
+    Q_OBJECT
+public:
+    explicit fenConnexion(QWidget *parent = 0);
+
+public slots:
+    void connexion();
+    void on_boutonConnexion_clicked();
+
+    void on_boutonEnvoyer_clicked();
+
+    void on_message_returnPressed();
+
+    void donneesRecues();
+
+    void connecte();
+
+    void deconnecte();
+
+    void erreurSocket(QAbstractSocket::SocketError erreur);
+private:
+    QShortcut* sc;
+    QTcpSocket *socket; // Représente le serveur
+
+    quint16 tailleMessage;
+};
+
+#endif // FENCONNEXION_H

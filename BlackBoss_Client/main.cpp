@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+#include "fenconnexion.h"
 #include <QApplication>
 #include "fenclient.h"
 
@@ -8,9 +8,9 @@ int main(int argc, char *argv[])
 {
     //cout << "Hello World!" << endl;
     QApplication a(argc, argv);
-    //MainWindow* mw= new MainWindow();
-    //mw->show();
+    fenConnexion* fc= new fenConnexion();
+    fc->show();
     FenClient* cli=new FenClient();
-    cli->show();
+    //cli->show();
     return a.exec();
 }
