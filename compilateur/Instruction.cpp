@@ -26,6 +26,14 @@ extern Database* memory;
 
 
 /*
+ * renvoie true si le caractère c peut être dans le nom d'une variable ou d'une methode non opérateur
+ */
+bool isNotSpe(char c)
+{
+    return (c>='A' && c<='Z')||(c>='a' && c<='z')||(c=='_')||(c==':');
+}
+
+/*
  * retourne la string correspondant à l'id dans la base de données
  */
 string getStringId(string id)
@@ -104,6 +112,605 @@ vector<Type*> makeArg(string cont)
     return ret;
 }
 
+/*
+ * return true si i est dans le tableau
+ */
+bool isIntab(int i,vector<int> tab)
+{
+    unsigned int k;
+    for(k=0;k<tab.size();k++)
+    {
+        if(tab[k]==i) return true;
+    }
+    return false;
+}
+
+/*
+ * return l'indice du name dans la string
+ */
+
+int indexInString(string name, string s, vector<int> index)
+{
+    unsigned int i=0;
+    for(i=0;i<s.size()-1;i++)
+    {
+       unsigned int nbCom=0;
+       unsigned int l;
+       for(l=0;l<name.size();l++)
+       {
+           if(isIntab(i,index))
+           {
+               break;
+           }
+           if(i+l<s.size())
+           {
+               if(s[i+l]==name[l])
+               {
+                   nbCom++;
+               }
+               else break;
+           }
+       }
+       if(nbCom==name.size())
+       {
+           break;
+       }
+
+    }
+    index.push_back(i);
+    return i;
+}
+
+string parenth(string s)
+{
+
+    string ret=s;
+    unsigned int k=0;
+    string actualMot="";
+    int numPar=0;
+    string actualFun="";
+    vector<Instruction*> inst;
+    for(k=0;k<s.size();k++)
+    {
+        if(isNotSpe(s[k]))
+        {
+            actualMot+=s[k];
+        }
+        else if(s[k]=='(')
+        {
+            numPar++;
+            if(actualMot.compare("")!=0)
+            {
+                actualFun=actualMot;
+                actualMot="";
+            }
+        }
+        else if(s[k]==')')
+        {
+            numPar--;
+        }
+        else
+        {
+            if(k<s.size()-1)
+            {
+                if(s[k]=='+' && s[k+1]=='+')
+                {
+                    actualFun="++";
+                    continue;
+                }
+                else if(s[k]=='-' && s[k+1]=='-')
+                {
+                    actualFun="--";
+                    continue;
+                }
+                else if(s[k]=='=' && s[k+1]=='=')
+                {
+                    actualFun="==";
+                    continue;
+                }
+                else if(s[k]=='!' && s[k+1]=='=')
+                {
+                    actualFun="!=";
+                    continue;
+                }
+                else if(s[k]=='+' && s[k+1]=='=')
+                {
+                    actualFun="++";
+                    continue;
+                }
+                else if(s[k]=='-' && s[k+1]=='=')
+                {
+                    actualFun="-=";
+                    continue;
+                }
+                else if(s[k]=='*' && s[k+1]=='=')
+                {
+                    actualFun="*=";
+                    continue;
+                }
+                else if(s[k]=='/' && s[k+1]=='=')
+                {
+                    actualFun="/=";
+                    continue;
+                }
+                else if(s[k]=='>' && s[k+1]=='=')
+                {
+                    actualFun=">=";
+                    continue;
+                }
+                else if(s[k]=='<' && s[k+1]=='=')
+                {
+                    actualFun="<=";
+                    continue;
+                }
+                else if(s[k]=='-' && s[k+1]=='>')
+                {
+                    actualFun="->";
+                    continue;
+                }
+                else if(s[k]=='[')
+                {
+                    actualFun="[]";
+                    continue;
+                }
+                else if(s[k]=='&' && s[k]=='&')
+                {
+                    actualFun="&&";
+                    continue;
+                }
+                else if(s[k]=='|' && s[k]=='|')
+                {
+                    actualFun="||";
+                    continue;
+                }
+                else if(s[k]=='<' && s[k]=='<')
+                {
+                    actualFun="<<";
+                    continue;
+                }
+                else if(s[k]=='>' && s[k]=='>')
+                {
+                    actualFun=">>";
+                    continue;
+                }
+            }
+            if(k<s.size())
+            {
+                if(s[k]=='.')
+                {
+                    actualFun=".";
+                    continue;
+                }
+                else if(s[k]=='=')
+                {
+                    actualFun="=";
+                    continue;
+                }
+                else if(s[k]=='!')
+                {
+                    actualFun="!";
+                    continue;
+                }
+                else if(s[k]=='+')
+                {
+                    actualFun="+";
+                    continue;
+                }
+                else if(s[k]=='-')
+                {
+                    actualFun="-";
+                    continue;
+                }
+                else if(s[k]=='*')
+                {
+                    actualFun="*";
+                    continue;
+                }
+                else if(s[k]=='/')
+                {
+                    actualFun="/";
+                    continue;
+                }
+                else if(s[k]=='%')
+                {
+                    actualFun="%";
+                    continue;
+                }
+                else if(s[k]=='>')
+                {
+                    actualFun=">";
+                    continue;
+                }
+                else if(s[k]=='<')
+                {
+                    actualFun="<";
+                    continue;
+                }
+            }
+        }
+        if(actualFun.compare("")==0)
+        {
+            string idFun=getIdInstruction(actualFun);
+            inst.push_back(new Instruction(idFun));
+        }
+    }
+
+    if(inst.size()>1)
+    {
+        unsigned k=0;
+        vector<int> tab;
+        for(k=0;k<inst.size();k++)
+        {
+            s=ret;
+            if(k<inst.size()-1)
+            {
+
+                string name;
+                bool isInst1=false;
+                bool isInst2=false;
+                bool isEqual=false;
+                bool isLeft=false;
+                bool isOp=false;
+                if(inst[k]->prior< inst[k+1]->prior)
+                {
+                    isInst1=true;
+                    name=inst[k+1]->name;
+                    isOp=inst[k+1]->isOp;
+                }
+                else if(inst[k]->prior==inst[k+1]->prior)
+                {
+                    isEqual=true;
+                    if(inst[k]->assoc.compare("gauche")==0)
+                    {
+                        name=inst[k]->name;
+                        isOp=inst[k]->isOp;
+                        isLeft=true;
+                    }
+                    else
+                    {
+                        name=inst[k+1]->name;
+                        isOp=inst[k+1]->isOp;
+                        //isRight=true;
+                    }
+                }
+                else if(inst[k]->prior > inst[k+1]->prior)
+                {
+                    isInst2=true;
+                    name=inst[k]->name;
+                    isOp=inst[k]->isOp;
+                }
+                if(isOp)
+                {
+                   if(name.compare("++")==0 || name.compare("--")==0)
+                   {
+                       unsigned int i=indexInString(name,s,tab);
+                       unsigned int j;
+                       int numPar2=0;
+                       if(i>0)
+                       {
+                           for(j=i-1;j>=0;j--)
+                           {
+                               if(s[j]==')')
+                               {
+                                   numPar2--;
+                               }
+                               if(s[j]=='(' && numPar2==-1)
+                               {
+                                   numPar2++;
+                                   continue;
+                               }
+                               if(s[j]=='(')
+                               {
+                                   numPar2++;
+                               }
+                               if(!isNotSpe(s[j]) && numPar2==0) //si le caractère ne peut pas être dans une variable
+                               {
+                                   break;
+                               }
+                           }
+                           unsigned int l;
+                           for(l=0;l<s.size();l++)
+                           {
+                               if(l==j+1)
+                               {
+                                   ret+='(';
+                               }
+                               else if(l==i+2)
+                               {
+                                   ret+=')';
+                               }
+                               ret+=s[l];
+                           }
+                           if((i+2)==s.size())
+                           {
+                               ret+=')';
+                           }
+
+                       }
+                   }
+                   else if(name.compare("!")==0)
+                   {
+                       unsigned int i=indexInString(name,s,tab);
+                       unsigned int l;
+                       int numPar2=0;
+                       bool ok=false;
+                       if(i>0)
+                       {
+                           for(l=0;l<s.size();l++)
+                           {
+                               if(l==i-1)
+                               {
+                                   ret+='(';
+                               }
+                               if(l>i && !ok)
+                               {
+                                   if(s[l]=='(')
+                                   {
+                                       numPar2++;
+                                   }
+                                   if(s[l]==')' && numPar2==1)
+                                   {
+                                       numPar2--;
+                                       ret+=')';
+                                       continue;
+                                   }
+                                   if(s[l]==')')
+                                   {
+                                       numPar2++;
+                                   }
+                                   if(!isNotSpe(s[l]) && numPar2==0)
+                                   {
+                                       ret+=')';
+                                       ok=true;
+                                   }
+                               }
+                               ret+=s[l];
+                           }
+                           if(!ok)
+                           {
+                               ret+=')';
+                           }
+                       }
+                       else
+                       {
+                           if(isInst1 || (isEqual && isLeft))
+                           {
+                               ret+='(';
+                               for(l=0;l<s.size();l++)
+                               {
+                                   if(l>i && !ok)
+                                   {
+                                       if(s[l]=='(')
+                                       {
+                                           numPar2++;
+                                       }
+                                       if(s[l]==')' && numPar2==1)
+                                       {
+                                           numPar2--;
+                                           ret+=')';
+                                           continue;
+                                       }
+                                       if(s[l]==')')
+                                       {
+                                           numPar2++;
+                                       }
+                                       if(!isNotSpe(s[l]) && numPar2==0)
+                                       {
+                                           ret+=')';
+                                           ok=true;
+                                       }
+                                   }
+                                   ret+=s[l];
+                               }
+                               if(!ok)
+                               {
+                                   ret+=')';
+                               }
+                           }
+                       }
+                   }
+                   else if(name.compare("[]")==0)
+                   {
+                       unsigned int i=indexInString("[",s,tab);
+                       unsigned int j;
+                       if(i>0)
+                       {
+                           int numPar2=0;
+                           for(j=i-1;j>=0;j--)
+                           {
+                               if(s[j]==')')
+                               {
+                                   numPar2--;
+                               }
+                               if(s[j]=='(' && numPar2==-1)
+                               {
+                                   numPar2++;
+                                   continue;
+                               }
+                               if(s[j]=='(')
+                               {
+                                   numPar2++;
+                               }
+                               if(!isNotSpe(s[j]) && numPar2==0) //si le caractère ne peut pas être dans une variable
+                               {
+                                   break;
+                               }
+                           }
+                           unsigned int l;
+                           int nbCro=0;
+                           bool ok=false;
+                           int nbOk=0;
+                           for(l=0;l<s.size();l++)
+                           {
+                               if(ok && nbOk==0)
+                               {
+                                   ret+=')';
+                                   nbOk++;
+                               }
+                               if(l==j+1)
+                               {
+                                   ret+='(';
+                               }
+                               if(s[l]=='[')
+                               {
+                                   nbCro++;
+                               }
+                               if(s[l]==']' && nbCro==1)
+                               {
+                                   ok=true;
+                               }
+                               else if(s[l]==']')
+                               {
+                                   nbCro--;
+                               }
+                               ret+=s[l];
+                           }
+                           if(nbOk==0)
+                           {
+                               ret+=')';
+                           }
+                       }
+
+                   }
+                   else
+                   {
+                        unsigned int i=indexInString(name,s,tab);
+                        if(i>0)
+                        {
+                            unsigned int j;
+                            int numPar2=0;
+                            for(j=i-1;j>=0;j--) //j est l'indice juste avant le debut de l' argument 1
+                            {
+                                if(s[j]==')')
+                                {
+                                    numPar2--;
+                                }
+                                if(s[j]=='(' && numPar2==-1)
+                                {
+                                    numPar2++;
+                                    continue;
+                                }
+                                if(s[j]=='(')
+                                {
+                                    numPar2++;
+                                }
+                                if(!isNotSpe(s[j]) && numPar2==0) //si le caractère ne peut pas être dans une variable
+                                {
+                                    break;
+                                }
+                            }
+                            unsigned int m;
+                            numPar2=0;
+                            for(m=i+name.size();m<s.size();m++) //m aura pour valeur l'indie juste après la fin du deuxième argument
+                            {
+                                if(s[m]=='(')
+                                {
+                                    numPar2++;
+                                }
+                                if(s[m]==')' && numPar2==1)
+                                {
+                                    numPar2--;
+                                    continue;
+                                }
+                                if(s[m]==')')
+                                {
+                                    numPar2--;
+                                }
+                                if(!isNotSpe(s[m]) && numPar2==0) //si le caractère ne peut pas être dans une variable
+                                {
+                                    break;
+                                }
+                            }
+                            unsigned int l;
+                            for(l=0;l<s.size();l++)
+                            {
+                                if(l==j+1) //indice début d'argument 1
+                                {
+                                   ret+='(';
+                                }
+                                if(l==m) //indice après la fin de l'argument 2
+                                {
+                                    ret+=')';
+                                }
+                                ret+=s[l];
+                            }
+                            if(m==s.size())
+                            {
+                                ret+=')';
+                            }
+
+                        }
+                   }
+                }
+                else
+                {
+                    unsigned int i=indexInString(name,s,tab);
+                    unsigned int j=0;
+                    if(i>0)
+                    {
+                        for(j=0;j<i;j++)
+                        {
+                            ret+=s[j];
+                        }
+                        ret+='(';
+                        ret+=name;
+                        ret+='(';
+                        int numPar2=0;
+                        for(j=i+name.size();j<s.size();j++)
+                        {
+                            ret+=s[j];
+                            if(s[j]==')' && numPar2==0)
+                            {
+                                ret+=')';
+                                continue;
+                            }
+                            else if(s[j]=='(')
+                            {
+                                numPar2++;
+                            }
+                            else if(s[j]==')')
+                            {
+                                numPar2--;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if(isInst1 || (isEqual && isLeft))
+                        {
+                            ret+='(';
+                            ret+=name;
+                            ret+='(';
+                            int numPar2=0;
+                            for(j=i+name.size();j<s.size();j++)
+                            {
+                                ret+=s[j];
+                                if(s[j]==')' && numPar2==0)
+                                {
+                                    ret+=')';
+                                    continue;
+                                }
+                                else if(s[j]=='(')
+                                {
+                                    numPar2++;
+                                }
+                                else if(s[j]==')')
+                                {
+                                    numPar2--;
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+            }
+        }
+    }
+    inst.clear();
+    return ret;
+}
+
 
 void Instruction::preCompile(string inst)
 {
@@ -149,53 +756,7 @@ void Instruction::preCompile(string inst)
             {
                type=If_;
             }
-           else
-           {
-               int i=0;
-               string vname="";
-               while(i<cont[0].size())
-               {
-                   if(cont[0][i]=='=')
-                   {
-                       type=Set_;
-                       //var=vname;
-                       break;
-                   }
-                   else if(cont[0][i]=='<' || cont[0][i]=='>')
-                   {
-                       type=Bool_;
-                       //var=vname;
-                       break;
-                   }
-                   else if(i+1<cont.size())
-                   {
-                        if((cont[0][i]=='+' && cont[0][i+1]=='+') || (cont[0][i]=='-' && cont[0][i+1]=='-'))
-                        {
-                            type=Set_;
-                            //var=vname;
-                            break;
-                        }
-                        else if((cont[0][i]=='+' && cont[0][i+1]=='=') || (cont[0][i]=='-' && cont[0][i+1]=='=') || (cont[0][i]=='*' && cont[0][i+1]=='=') || (cont[0][i]=='/' && cont[0][i+1]=='='))
-                        {
-                            type=Set_;
-                            //var=vname;
-                            break;
-                        }
-                        else if((cont[0][i]=='<' && cont[0][i+1]=='=') || (cont[0][i]=='>' && cont[0][i+1]=='=') || (cont[0][i]=='=' && cont[0][i+1]=='='))
-                        {
-                            type=Bool_;
-                            //var=vname;
-                            break;
-                        }
-                   }
-                   else if(cont[0][i]=='(')
-                   {
-                       break;
-                   }
-                   vname+=cont[0][i];
-                   i++;
-               }
-           }
+
         }
         if(cont[0].size()>3 && type.compare("")==0)
         {
@@ -203,53 +764,7 @@ void Instruction::preCompile(string inst)
             {
                 type=For_;
             }
-            else
-           {
-               int i=0;
-               string vname="";
-               while(i<cont[0].size())
-               {
-                   if(cont[0][i]=='=')
-                   {
-                       type=Set_;
-                       //var=vname;
-                       break;
-                   }
-                   else if(cont[0][i]=='<' || cont[0][i]=='>')
-                   {
-                       type=Bool_;
-                       //var=vname;
-                       break;
-                   }
-                   else if(i<cont.size())
-                   {
-                        if((cont[0][i-1]=='+' && cont[0][i]=='+') || (cont[0][i-1]=='-' && cont[0][i]=='-'))
-                        {
-                            type=Set_;
-                            //var=vname;
-                            break;
-                        }
-                        else if((cont[0][i-1]=='+' && cont[0][i]=='=') || (cont[0][i-1]=='-' && cont[0][i]=='=') || (cont[0][i-1]=='*' && cont[0][i]=='=') || (cont[0][i-1]=='/' && cont[0][i]=='='))
-                        {
-                            type=Set_;
-                            //var=vname;
-                            break;
-                        }
-                        else if((cont[0][i-1]=='<' && cont[0][i]=='=') || (cont[0][i-1]=='>' && cont[0][i]=='=') || (cont[0][i-1]=='=' && cont[0][i+1]=='='))
-                        {
-                            type=Bool_;
-                            //var=vname;
-                            break;
-                        }
-                   }
-                   else if(cont[0][i]=='(')
-                   {
-                       break;
-                   }
-                   vname+=cont[0][i];
-                   i++;
-               }
-           }
+
         }
         if(cont[0].size()>5 && type.compare("")==0)
         {
@@ -257,53 +772,7 @@ void Instruction::preCompile(string inst)
             {
                 type=While_;
             }
-            else
-           {
-               int i=0;
-               string vname="";
-               while(i<cont[0].size())
-               {
-                   if(cont[0][i]=='=')
-                   {
-                       type=Set_;
-                       //var=vname;
-                       break;
-                   }
-                   else if(cont[0][i]=='<' || cont[0][i]=='>')
-                   {
-                       type=Bool_;
-                       //var=vname;
-                       break;
-                   }
-                   else if(i+1<cont.size())
-                   {
-                        if((cont[0][i]=='+' && cont[0][i+1]=='+') || (cont[0][i]=='-' && cont[0][i+1]=='-'))
-                        {
-                            type=Set_;
-                            //var=vname;
-                            break;
-                        }
-                        else if((cont[0][i]=='+' && cont[0][i+1]=='=') || (cont[0][i]=='-' && cont[0][i+1]=='=') || (cont[0][i]=='*' && cont[0][i+1]=='=') || (cont[0][i]=='/' && cont[0][i+1]=='='))
-                        {
-                            type=Set_;
-                            //var=vname;
-                            break;
-                        }
-                        else if((cont[0][i]=='<' && cont[0][i+1]=='=') || (cont[0][i]=='>' && cont[0][i+1]=='=') || (cont[0][i]=='=' && cont[0][i+1]=='='))
-                        {
-                            type=Bool_;
-                            //var=vname;
-                            break;
-                        }
-                   }
-                   else if(cont[0][i]=='(')
-                   {
-                       break;
-                   }
-                   vname+=cont[0][i];
-                   i++;
-               }
-           }
+
         }
         if(cont[0].size()>6 && type.compare("")==0)
         {
@@ -311,56 +780,14 @@ void Instruction::preCompile(string inst)
             {
                 type=NewVar_;
             }
-            else
-           {
-               int i=0;
-               string vname="";
-               while(i<cont[0].size())
-               {
-                   if(cont[0][i]=='=')
-                   {
-                       type=Set_;
-                       //var=vname;
-                       break;
-                   }
-                   else if(cont[0][i]=='<' || cont[0][i]=='>')
-                   {
-                       type=Bool_;
-                       //var=vname;
-                       break;
-                   }
-                   else if(i+1<cont.size())
-                   {
-                        if((cont[0][i]=='+' && cont[0][i+1]=='+') || (cont[0][i]=='-' && cont[0][i+1]=='-'))
-                        {
-                            type=Set_;
-                            //var=vname;
-                            break;
-                        }
-                        else if((cont[0][i]=='+' && cont[0][i+1]=='=') || (cont[0][i]=='-' && cont[0][i+1]=='=') || (cont[0][i]=='*' && cont[0][i+1]=='=') || (cont[0][i]=='/' && cont[0][i+1]=='='))
-                        {
-                            type=Set_;
-                            //var=vname;
-                            break;
-                        }
-                        else if((cont[0][i]=='<' && cont[0][i+1]=='=') || (cont[0][i]=='>' && cont[0][i+1]=='=') || (cont[0][i]=='=' && cont[0][i+1]=='='))
-                        {
-                            type=Bool_;
-                            //var=vname;
-                            break;
-                        }
-                   }
-                   else if(cont[0][i]=='(')
-                   {
-                       break;
-                   }
-                   vname+=cont[0][i];
-                   i++;
-               }
-           }
+
         }
         if(type.compare("")==0)
         {
+            string crt=cont[0];
+            vector<Instruction*> inst;
+            unsigned int k=0;
+
 
         }
     }
@@ -439,44 +866,53 @@ Instruction::Instruction(string _name, string argS, string retourS, string inst,
     brut=inst;
     isOp=_isOp;
     assoc=((assoc.compare("droite")==0)? "droite" : "gauche");
+    cout<<"assoc:"<<assoc<<endl;
     argT=makeArg(argS);
     retourT=makeArg(retourS);
     prior=_prior;
-    ok=true;
-    //cout<<"avant preCompile"<<endl;
-    preCompile(inst);
-    //cout<<"après preCompile"<<endl;
-    if(!tmp)
+    string id=getIdInstruction(name,argS,retourS);
+    if(id.compare("")!=0)
     {
-        char priorStr[4];
-        sprintf(priorStr,"%d",prior);
-        string priorS=priorStr;
+        ok=true;
+        //cout<<"avant preCompile"<<endl;
+        preCompile(inst);
+        //cout<<"après preCompile"<<endl;
+        if(!tmp)
+        {
+            char priorStr[4];
+            sprintf(priorStr,"%d",prior);
+            string priorS=priorStr;
 
-        Vargen* nameVar=new Vargen(name,"string",name);
-        delete nameVar;
-        string nameId=getIdString(name);
-        //cout<<"name id:"<<nameId<<endl;
+            Vargen* nameVar=new Vargen(name,"string",name);
+            delete nameVar;
+            string nameId=getIdString(name);
+            //cout<<"name id:"<<nameId<<endl;
 
-        Vargen* argSvar=new Vargen(argS,"string",argS);
-        delete argSvar;
-        string argTId=getIdString(argS);
+            Vargen* argSvar=new Vargen(argS,"string",argS);
+            delete argSvar;
+            string argTId=getIdString(argS);
 
-        Vargen* retourSvar=new Vargen(retourS,"string",retourS);
-        delete retourSvar;
-        string retourId=getIdString(retourS);
+            Vargen* retourSvar=new Vargen(retourS,"string",retourS);
+            delete retourSvar;
+            string retourId=getIdString(retourS);
 
-        Vargen* instvar=new Vargen(inst,"string",inst);
-        delete instvar;
-        string instId=getIdString(inst);
+            Vargen* instvar=new Vargen(inst,"string",inst);
+            delete instvar;
+            string instId=getIdString(inst);
 
-        Vargen* assocVar=new Vargen(assoc,"string",assoc);
-        delete assocVar;
-        string assocId=getIdString(assoc);
+            Vargen* assocVar=new Vargen(assoc,"string",assoc);
+            delete assocVar;
+            string assocId=getIdString(assoc);
 
-        string isOpS=(isOp? "true" : "false");
-        string req="insert into instruction(name,argT,retourT,cont,prior,assoc,isOp) values("+nameId+","+argTId+","+retourId+","+instId+","+priorS+","+assocId+","+isOpS+");";
-        cout<<"requete inst:"<<req<<endl;
-        memory->insert(req);
+            string isOpS=(isOp? "true" : "false");
+            string req="insert into instruction(name,argT,retourT,cont,prior,assoc,isOp) values("+nameId+","+argTId+","+retourId+","+instId+","+priorS+","+assocId+","+isOpS+");";
+            cout<<"requete inst:"<<req<<endl;
+            memory->insert(req);
+        }
+    }
+    else
+    {
+        ok=false;
     }
 
 }
@@ -573,6 +1009,8 @@ void Else(Instruction *cond, Instruction *boucle)
 }
 
 
+
+
 std::vector<Instruction*> findInstruction(string name)
 {
     std::vector<Instruction*> ret;
@@ -597,37 +1035,69 @@ std::vector<Instruction*> findInstruction(string name)
     return ret;
 }
 
-
+/*
+ * name est une string naturelle (non identifiant d'une string dans la bdd)
+ * idem argT
+ * idem retourT
+ */
 string getIdInstruction(string name, string argT, string retourT)
 {
     string id="";
     string nameId=getIdString(name);
-    string argTId=getIdString(argT);
-    if(retourT.compare("")!=0)
+    if(argT.compare("")!=0)
     {
-        string retourTId=getIdString(retourT);
-        string req="select ins_id from instruction where name="+nameId+" and "+argTId+" and "+retourTId+";";
-        MYSQL_RES* res=memory->request(req);
-        if(res!=NULL)
+        string argTId=getIdString(argT);
+        if(retourT.compare("")!=0)
         {
-           MYSQL_ROW row;
-           if(row=mysql_fetch_row(res))
-           {
-               id=(row[0]? row[0]:"");
-           }
-           else
-           {
-               cout<<"l'instruction ("<<retourT<<") "<<name<<"("+argT+") n'existe pas"<<endl;
-           }
+            string retourTId=getIdString(retourT);
+            string req="select ins_id from instruction where name="+nameId+" and "+argTId+" and "+retourTId+";";
+            MYSQL_RES* res=memory->request(req);
+            if(res!=NULL)
+            {
+               MYSQL_ROW row;
+               if(row=mysql_fetch_row(res))
+               {
+                   id=(row[0]? row[0]:"");
+               }
+               else
+               {
+                   cout<<"l'instruction ("<<retourT<<") "<<name<<"("+argT+") n'existe pas"<<endl;
+               }
+            }
+            else
+            {
+                cout<<"Erreur requete sql: "<<req<<endl;
+            }
         }
         else
         {
-            cout<<"Erreur requete sql: "<<req<<endl;
+            string req="select ins_id from instruction where name="+nameId+" and "+argTId+";";
+            MYSQL_RES* res=memory->request(req);
+            if(res!=NULL)
+            {
+                MYSQL_ROW row;
+                if(row=mysql_fetch_row(res))
+                {
+                    id=(row[0]? row[0]:"");
+                }
+                else
+                {
+                    cout<<"l'instruction "<<name<<"("+argT+") n'existe pas"<<endl;
+                }
+                if(row=mysql_fetch_row(res))
+                {
+                    cout<<"Attention: il existe plusieurs instruction de même prototype d'argument"<<endl;
+                }
+            }
+            else
+            {
+                cout<<"Erreur requete sql: "<<req<<endl;
+            }
         }
     }
     else
     {
-        string req="select ins_id from instruction where name="+nameId+" and "+argTId+";";
+        string req="select ins_id from instruction where name="+nameId+";";
         MYSQL_RES* res=memory->request(req);
         if(res!=NULL)
         {
@@ -638,11 +1108,7 @@ string getIdInstruction(string name, string argT, string retourT)
             }
             else
             {
-                cout<<"l'instruction "<<name<<"("+argT+") n'existe pas"<<endl;
-            }
-            if(row=mysql_fetch_row(res))
-            {
-                cout<<"Attention: il existe plusieurs instruction de même prototype d'argument"<<endl;
+                cout<<"l'instruction id:"<<id<<" n'existe pas"<<endl;
             }
         }
         else

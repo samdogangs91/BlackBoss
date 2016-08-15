@@ -16,9 +16,9 @@ int main(int argc, char *argv[])
     //Instruction* ins=new Instruction("string::=","string;string;","","If(arg.size()==2 && retour.size()==0; If(arg[0]->type->name==arg[1]->type->name; arg[0]->setValue(arg[1]);) ;);",15,"gauche");
     //char idTmp[4];
     //sprintf(idTmp,"%d",);
-    string id=getIdInstruction("string::=","string;string;","");
-    Instruction* ins=new Instruction(id);
-    ins->print();
+    //string id=getIdInstruction("string::=","string;string;","");
+    Instruction* ins=new Instruction("--","","","",2,"droite",true);
+    //ins->print();
     //ins->compile();
     //ins->deleteAtt("assoc");
     //Vargen* var=new Vargen("Mathieu","string","Mathieu");

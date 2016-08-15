@@ -25,3 +25,12 @@ cont:
 	If(arg.size()==2 && retour.size()==1; ;);
 }
 
+
+
+*1: prior 3
+*2: prior 1
+*3: prior 4
+ 
+a *1 b *2 c *3 d=(a *1 b) *2 (c *4 d)
+
+

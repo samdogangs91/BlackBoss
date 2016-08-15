@@ -69,7 +69,7 @@ void Decr(Vargen * var); //operator --
 std::vector<Instruction*> findInstruction(std::string name);
 std::string getStringId(std::string id);
 std::string getIdString(std::string cont);
-std::string getIdInstruction(std::string name,std::string argT, std::string retourT="");
+std::string getIdInstruction(std::string name,std::string argT="", std::string retourT="");
 
 
 #endif	/* INSTRUCTION_H */
