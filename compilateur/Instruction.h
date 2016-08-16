@@ -66,6 +66,7 @@ void Incr(Vargen* var); //operator ++
 void Decr(Vargen * var); //operator --
 
 
+int indexInString(std::string name, std::string s, std::vector<int> index, unsigned int nbAtten=1);
 std::vector<Instruction*> findInstruction(std::string name);
 std::string getStringId(std::string id);
 std::string getIdString(std::string cont);

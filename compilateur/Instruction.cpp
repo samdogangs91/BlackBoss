@@ -39,7 +39,7 @@ bool isNotSpe(char c)
 string getStringId(string id)
 {
     string ret="";
-    string req="select cont from string natural join list_char where string_id="+id+";";
+    string req="select cont from string inner join list_char on string.string_id=list_char.list_char_id where string_id="+id+";";
     MYSQL_RES* res=memory->request(req);
     if(res!=NULL)
     {
@@ -63,7 +63,7 @@ string getStringId(string id)
 string getIdString(string cont)
 {
     string id="";
-    string req="select string_id from string natural join list_char where cont=\""+cont+"\";";
+    string req="select string_id from string inner join list_char on string.string_id=list_char.list_char_id where cont=\""+cont+"\";";
     MYSQL_RES* res=memory->request(req);
     if(res!=NULL)
     {
@@ -112,6 +112,37 @@ vector<Type*> makeArg(string cont)
     return ret;
 }
 
+vector<Instruction*> orderInst(vector<Instruction*> _inst)
+{
+    vector<Instruction*> ret;
+    while(_inst.size()>0)
+    {
+        unsigned int k;
+        unsigned int pos=0;
+        unsigned int prior=20;
+        for(k=0;k<_inst.size();k++)
+        {
+            if(_inst[k]->prior<prior)
+            {
+                pos=k;
+                prior=_inst[k]->prior;
+            }
+        }
+        ret.push_back(_inst[pos]);
+        _inst.erase(_inst.begin()+pos);
+    }
+    return ret;
+}
+
+/*
+ * return true si c peut etre un operateur
+ */
+
+bool isOpe(char c)
+{
+    return (c=='+')||(c=='-')||(c=='*')||(c=='∕')||(c=='=')||(c=='!')||(c=='>')||(c=='<');
+}
+
 /*
  * return true si i est dans le tableau
  */
@@ -128,36 +159,78 @@ bool isIntab(int i,vector<int> tab)
 /*
  * return l'indice du name dans la string
  */
-
-int indexInString(string name, string s, vector<int> index)
+int indexInString(string name, string s, vector<int> index, unsigned int nbAtten)
 {
     unsigned int i=0;
-    for(i=0;i<s.size()-1;i++)
+    //cout<<"tab size: "<<index.size()<<endl;
+    unsigned int nbVu=0;
+    if(name.size()>1)
     {
-       unsigned int nbCom=0;
-       unsigned int l;
-       for(l=0;l<name.size();l++)
-       {
-           if(isIntab(i,index))
+        for(i=0;i<s.size()-1;i++)
+        {
+           unsigned int nbCom=0;
+           unsigned int l;
+           for(l=0;l<name.size();l++)
+           {
+               if(isIntab(i,index))
+               {
+                   break;
+               }
+               if(i+l<s.size())
+               {
+                   if(s[i+l]==name[l])
+                   {
+                       nbCom++;
+                   }
+                   else break;
+               }
+           }
+           if(nbCom==name.size())
+           {
+               nbVu++;
+           }
+           if(nbVu==nbAtten)
            {
                break;
            }
-           if(i+l<s.size())
-           {
-               if(s[i+l]==name[l])
-               {
-                   nbCom++;
-               }
-               else break;
-           }
-       }
-       if(nbCom==name.size())
-       {
-           break;
-       }
 
+        }
     }
-    index.push_back(i);
+    else if(name.size()==1)
+    {
+        char op=name[0];
+        for(i=0;i<s.size();i++)
+        {
+            if(isIntab(i,index))
+            {
+                continue;
+            }
+            if(s[i]==op)
+            {
+                if(i>0 && i<s.size()-1)
+                {
+                    if(!isOpe(s[i-1]) && !isOpe(s[i+1]))
+                    {
+                        nbVu++;
+                    }
+                }
+                else if(i==0 && op=='!' && s.size()>0)
+                {
+                    if(!isOpe(s[1]))
+                    {
+                        nbVu++;
+                    }
+                }
+            }
+            if(nbVu==nbAtten)
+            {
+                break;
+            }
+        }
+    }
+    //index->push_back(i+1);
+    //int size=index.size();
+    //cout<<"in tab: "<<index[size-1]<<endl;
     return i;
 }
 
@@ -170,11 +243,13 @@ string parenth(string s)
     int numPar=0;
     string actualFun="";
     vector<Instruction*> inst;
+    vector<int> tab;
     for(k=0;k<s.size();k++)
     {
         if(isNotSpe(s[k]))
         {
             actualMot+=s[k];
+            //cout<<"isNotSpe: "<<s[k]<<endl;
         }
         else if(s[k]=='(')
         {
@@ -196,81 +271,97 @@ string parenth(string s)
                 if(s[k]=='+' && s[k+1]=='+')
                 {
                     actualFun="++";
+                    k++;
                     continue;
                 }
                 else if(s[k]=='-' && s[k+1]=='-')
                 {
                     actualFun="--";
+                    k++;
                     continue;
                 }
                 else if(s[k]=='=' && s[k+1]=='=')
                 {
                     actualFun="==";
+                    k++;
                     continue;
                 }
                 else if(s[k]=='!' && s[k+1]=='=')
                 {
                     actualFun="!=";
+                    k++;
                     continue;
                 }
                 else if(s[k]=='+' && s[k+1]=='=')
                 {
                     actualFun="++";
+                    k++;
                     continue;
                 }
                 else if(s[k]=='-' && s[k+1]=='=')
                 {
                     actualFun="-=";
+                    k++;
                     continue;
                 }
                 else if(s[k]=='*' && s[k+1]=='=')
                 {
                     actualFun="*=";
+                    k++;
                     continue;
                 }
                 else if(s[k]=='/' && s[k+1]=='=')
                 {
                     actualFun="/=";
+                    k++;
                     continue;
                 }
                 else if(s[k]=='>' && s[k+1]=='=')
                 {
                     actualFun=">=";
+                    k++;
                     continue;
                 }
                 else if(s[k]=='<' && s[k+1]=='=')
                 {
                     actualFun="<=";
+                    k++;
                     continue;
                 }
                 else if(s[k]=='-' && s[k+1]=='>')
                 {
                     actualFun="->";
+                    k++;
                     continue;
                 }
                 else if(s[k]=='[')
                 {
                     actualFun="[]";
+                    k++;
                     continue;
                 }
-                else if(s[k]=='&' && s[k]=='&')
+                else if(s[k]=='&' && s[k+1]=='&')
                 {
                     actualFun="&&";
+                    k++;
                     continue;
                 }
-                else if(s[k]=='|' && s[k]=='|')
+                else if(s[k]=='|' && s[k+1]=='|')
                 {
                     actualFun="||";
+                    k++;
                     continue;
                 }
-                else if(s[k]=='<' && s[k]=='<')
+                else if(s[k]=='<' && s[k+1]=='<')
                 {
                     actualFun="<<";
+                    k++;
                     continue;
                 }
-                else if(s[k]=='>' && s[k]=='>')
+                else if(s[k]=='>' && s[k+1]=='>')
                 {
                     actualFun=">>";
+                    k++;
                     continue;
                 }
             }
@@ -328,63 +419,88 @@ string parenth(string s)
                 }
             }
         }
-        if(actualFun.compare("")==0)
+        if(actualFun.compare("")!=0)
         {
+            cout<<"instruction: "<<actualFun<<endl;
             string idFun=getIdInstruction(actualFun);
+            cout<<"idFun:"<<idFun<<endl;
             inst.push_back(new Instruction(idFun));
+            actualFun="";
         }
     }
 
+    vector<Instruction*> tmp=orderInst(inst);
+    inst=tmp;
     if(inst.size()>1)
     {
         unsigned k=0;
-        vector<int> tab;
-        for(k=0;k<inst.size();k++)
+
+        while(inst.size()>1)
         {
             s=ret;
+            cout<<s<<endl;
             if(k<inst.size()-1)
             {
-
+                ret="";
                 string name;
                 bool isInst1=false;
                 bool isInst2=false;
                 bool isEqual=false;
                 bool isLeft=false;
                 bool isOp=false;
-                if(inst[k]->prior< inst[k+1]->prior)
+                bool sameName=false;
+                if(inst[k]->prior> inst[k+1]->prior)
                 {
                     isInst1=true;
                     name=inst[k+1]->name;
                     isOp=inst[k+1]->isOp;
+                    inst.erase(inst.begin()+1);
+                    cout<<"plus fort à droite: name= "<<name<<endl;
                 }
                 else if(inst[k]->prior==inst[k+1]->prior)
                 {
                     isEqual=true;
                     if(inst[k]->assoc.compare("gauche")==0)
-                    {
+                    {                        
                         name=inst[k]->name;
                         isOp=inst[k]->isOp;
+                        inst.erase(inst.begin());
                         isLeft=true;
+                        cout<<"isEqual, assoc gauche et name="<<name<<endl;
                     }
                     else
                     {
                         name=inst[k+1]->name;
                         isOp=inst[k+1]->isOp;
+                        inst.erase(inst.begin()+1);
+                        sameName=(inst[k]->name.compare(inst[k+1]->name)==0);
+                        cout<<"isEqual, assoc droite et name="<<name<<endl;
                         //isRight=true;
                     }
                 }
-                else if(inst[k]->prior > inst[k+1]->prior)
+                else if(inst[k]->prior < inst[k+1]->prior)
                 {
                     isInst2=true;
                     name=inst[k]->name;
                     isOp=inst[k]->isOp;
+                    inst.erase(inst.begin());
+                    cout<<"plus fort à gauche: name= "<<name<<endl;
                 }
                 if(isOp)
                 {
                    if(name.compare("++")==0 || name.compare("--")==0)
                    {
-                       unsigned int i=indexInString(name,s,tab);
-                       unsigned int j;
+                       unsigned int i;
+                       if(sameName)
+                       {
+                           i=indexInString(name,s,tab,2);
+                       }
+                       else
+                       {
+                           i=indexInString(name,s,tab);
+                       }
+                       tab.push_back(i+1);
+                       int j;
                        int numPar2=0;
                        if(i>0)
                        {
@@ -430,7 +546,16 @@ string parenth(string s)
                    }
                    else if(name.compare("!")==0)
                    {
-                       unsigned int i=indexInString(name,s,tab);
+                       unsigned int i;
+                       if(sameName)
+                       {
+                           i=indexInString(name,s,tab,2);
+                       }
+                       else
+                       {
+                           i=indexInString(name,s,tab);
+                       }
+                       tab.push_back(i+1);
                        unsigned int l;
                        int numPar2=0;
                        bool ok=false;
@@ -511,8 +636,18 @@ string parenth(string s)
                    }
                    else if(name.compare("[]")==0)
                    {
-                       unsigned int i=indexInString("[",s,tab);
-                       unsigned int j;
+                       unsigned int i;
+                       if(sameName)
+                       {
+                           i=indexInString("[",s,tab,2);
+                       }
+                       else
+                       {
+                           i=indexInString("[",s,tab);
+                       }
+                       tab.push_back(i+1);
+                       int j;
+                       int nbCro=0;
                        if(i>0)
                        {
                            int numPar2=0;
@@ -531,7 +666,20 @@ string parenth(string s)
                                {
                                    numPar2++;
                                }
-                               if(!isNotSpe(s[j]) && numPar2==0) //si le caractère ne peut pas être dans une variable
+                               if(s[j]==']')
+                               {
+                                   nbCro--;
+                               }
+                               if(s[j]=='[' && nbCro==-1)
+                               {
+                                   nbCro++;
+                                   continue;
+                               }
+                               if(s[j]=='[')
+                               {
+                                   nbCro++;
+                               }
+                               if(!isNotSpe(s[j]) && numPar2==0 && nbCro==0) //si le caractère ne peut pas être dans une variable
                                {
                                    break;
                                }
@@ -574,11 +722,28 @@ string parenth(string s)
                    }
                    else
                    {
-                        unsigned int i=indexInString(name,s,tab);
+                       unsigned int i;
+                       if(sameName)
+                       {
+                           i=indexInString(name,s,tab,2);
+                       }
+                       else
+                       {
+                           i=indexInString(name,s,tab);
+                       }
+                        tab.push_back(i+1);
+                        //int size=tab.size();
+                        //tab.pop_back();
+                        cout<<"tab size: "<<tab.size()<<endl;
+                        //int val=i+1;
+                        //tab.push_back(val);
+                        cout<<"indexInString: "<<i<<endl;
+                        //tab[size-1]=i+1;
                         if(i>0)
                         {
-                            unsigned int j;
+                            int j=0;
                             int numPar2=0;
+                            int nbCro=0;
                             for(j=i-1;j>=0;j--) //j est l'indice juste avant le debut de l' argument 1
                             {
                                 if(s[j]==')')
@@ -594,13 +759,28 @@ string parenth(string s)
                                 {
                                     numPar2++;
                                 }
-                                if(!isNotSpe(s[j]) && numPar2==0) //si le caractère ne peut pas être dans une variable
+                                if(s[j]==']')
+                                {
+                                    nbCro--;
+                                }
+                                if(s[j]=='[' && nbCro==-1)
+                                {
+                                    nbCro++;
+                                    continue;
+                                }
+                                if(s[j]=='[')
+                                {
+                                    nbCro++;
+                                }
+                                if(!isNotSpe(s[j]) && numPar2==0 && nbCro==0) //si le caractère ne peut pas être dans une variable
                                 {
                                     break;
                                 }
                             }
+                            cout<<"j="<<j<<endl;
                             unsigned int m;
                             numPar2=0;
+                            nbCro=0;
                             for(m=i+name.size();m<s.size();m++) //m aura pour valeur l'indie juste après la fin du deuxième argument
                             {
                                 if(s[m]=='(')
@@ -616,12 +796,26 @@ string parenth(string s)
                                 {
                                     numPar2--;
                                 }
-                                if(!isNotSpe(s[m]) && numPar2==0) //si le caractère ne peut pas être dans une variable
+                                if(s[m]=='[')
+                                {
+                                    nbCro++;
+                                }
+                                if(s[m]==']' && nbCro==1)
+                                {
+                                    nbCro--;
+                                    continue;
+                                }
+                                if(s[m]==']')
+                                {
+                                    nbCro--;
+                                }
+                                if(!isNotSpe(s[m]) && numPar2==0 && nbCro==0) //si le caractère ne peut pas être dans une variable
                                 {
                                     break;
                                 }
                             }
                             unsigned int l;
+                            //cout<<"avant for"<<endl;
                             for(l=0;l<s.size();l++)
                             {
                                 if(l==j+1) //indice début d'argument 1
@@ -638,13 +832,22 @@ string parenth(string s)
                             {
                                 ret+=')';
                             }
+                            //cout<<"retour: "<<ret<<endl;
 
                         }
                    }
                 }
                 else
                 {
-                    unsigned int i=indexInString(name,s,tab);
+                    unsigned int i;
+                    if(sameName)
+                    {
+                        i=indexInString(name,s,tab,2);
+                    }
+                    else
+                    {
+                        i=indexInString(name,s,tab);
+                    }
                     unsigned int j=0;
                     if(i>0)
                     {
@@ -705,8 +908,10 @@ string parenth(string s)
                 }
 
             }
+
         }
     }
+    //cout<<"retour: "<<ret<<endl;
     inst.clear();
     return ret;
 }
@@ -865,13 +1070,13 @@ Instruction::Instruction(string _name, string argS, string retourS, string inst,
     varTmp=new DbVar();
     brut=inst;
     isOp=_isOp;
-    assoc=((assoc.compare("droite")==0)? "droite" : "gauche");
-    cout<<"assoc:"<<assoc<<endl;
+    assoc=((_assoc.compare("droite")==0)? "droite" : "gauche");
+    //cout<<"assoc:"<<assoc<<endl;
     argT=makeArg(argS);
     retourT=makeArg(retourS);
     prior=_prior;
     string id=getIdInstruction(name,argS,retourS);
-    if(id.compare("")!=0)
+    if(id.compare("")==0)
     {
         ok=true;
         //cout<<"avant preCompile"<<endl;
@@ -1044,6 +1249,7 @@ string getIdInstruction(string name, string argT, string retourT)
 {
     string id="";
     string nameId=getIdString(name);
+    //cout<<"nameId="<<nameId<<endl;
     if(argT.compare("")!=0)
     {
         string argTId=getIdString(argT);
@@ -1108,7 +1314,7 @@ string getIdInstruction(string name, string argT, string retourT)
             }
             else
             {
-                cout<<"l'instruction id:"<<id<<" n'existe pas"<<endl;
+                //cout<<"l'instruction id:"<<id<<" n'existe pas"<<endl;
             }
         }
         else
