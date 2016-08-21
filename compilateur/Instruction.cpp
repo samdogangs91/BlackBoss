@@ -17,6 +17,38 @@ string While_="While";
 string NewVar_="NewVar";
 string Bool_="Bool";
 string Prog="Program";
+string Return_="Return";
+
+//operateur pour les nombres
+string SupEqual_="SupEqual";
+string Sup_="Sup";
+string InfEqual_="InfEqual";
+string Inf_="Inf";
+string Equal_="Equal";
+string Diff_="Diff";
+string Incr_="Incr";
+string Decr_="Decr";
+string PlusEqual_="PlusEqual";
+string Plus_="Plus";
+string MoinsEqual_="MoinsEqual";
+string Moins_="Moins";
+string Mult_="Mult";
+string MultEqual_="MultEqual";
+string Div_="Div";
+string DivEqual_="DivEqual";
+string Reste_="Reste";
+
+//operateur d'accès
+string Cro_="Cro";
+string Fleche_="Fleche";
+string Point_="Point";
+string In_="In";
+string Out_="Out";
+
+//opérateur pour les booléens
+string And_="And";
+string Or_="Or";
+string Neg_="Neg";
 
 extern string stringType;
 extern string intType;
@@ -112,6 +144,9 @@ vector<Type*> makeArg(string cont)
     return ret;
 }
 
+/*
+ * ordonne les instructions par priorité
+ */
 vector<Instruction*> orderInst(vector<Instruction*> _inst)
 {
     vector<Instruction*> ret;
@@ -137,7 +172,6 @@ vector<Instruction*> orderInst(vector<Instruction*> _inst)
 /*
  * return true si c peut etre un operateur
  */
-
 bool isOpe(char c)
 {
     return (c=='+')||(c=='-')||(c=='*')||(c=='∕')||(c=='=')||(c=='!')||(c=='>')||(c=='<');
@@ -164,14 +198,28 @@ int indexInString(string name, string s, vector<int> index, unsigned int nbAtten
     unsigned int i=0;
     //cout<<"tab size: "<<index.size()<<endl;
     unsigned int nbVu=0;
+    bool isInBra_=false;
+    bool isInQuo_=false;
     if(name.size()>1)
     {
         for(i=0;i<s.size()-1;i++)
         {
            unsigned int nbCom=0;
            unsigned int l;
-           for(l=0;l<name.size();l++)
+           if(s[i]=='"')
            {
+               isInQuo_=!isInQuo_;
+           }
+           if(s[i]=='\'')
+           {
+               isInBra_=!isInBra_;
+           }
+           if(isInQuo_||isInBra_)
+           {
+               continue;
+           }
+           for(l=0;l<name.size();l++)
+           {               
                if(isIntab(i,index))
                {
                    break;
@@ -201,6 +249,18 @@ int indexInString(string name, string s, vector<int> index, unsigned int nbAtten
         char op=name[0];
         for(i=0;i<s.size();i++)
         {
+            if(s[i]=='"')
+            {
+                isInQuo_=!isInQuo_;
+            }
+            if(s[i]=='\'')
+            {
+                isInBra_=!isInBra_;
+            }
+            if(isInQuo_||isInBra_)
+            {
+                continue;
+            }
             if(isIntab(i,index))
             {
                 continue;
@@ -244,8 +304,22 @@ string parenth(string s)
     string actualFun="";
     vector<Instruction*> inst;
     vector<int> tab;
+    bool isInQuo_=false;
+    bool isInBra_=false;
     for(k=0;k<s.size();k++)
     {
+        if(s[k]=='"')
+        {
+            isInQuo_=!isInQuo_;
+        }
+        if(s[k]=='\'')
+        {
+            isInBra_=!isInBra_;
+        }
+        if(isInQuo_||isInBra_)
+        {
+            continue;
+        }
         if(isNotSpe(s[k]))
         {
             actualMot+=s[k];
@@ -262,6 +336,7 @@ string parenth(string s)
         }
         else if(s[k]==')')
         {
+            actualMot="";
             numPar--;
         }
         else
@@ -426,6 +501,7 @@ string parenth(string s)
             cout<<"idFun:"<<idFun<<endl;
             inst.push_back(new Instruction(idFun));
             actualFun="";
+            actualMot="";
         }
     }
 
@@ -744,6 +820,8 @@ string parenth(string s)
                             int j=0;
                             int numPar2=0;
                             int nbCro=0;
+                            bool isInQuo=false;
+                            bool isInBra=false;
                             for(j=i-1;j>=0;j--) //j est l'indice juste avant le debut de l' argument 1
                             {
                                 if(s[j]==')')
@@ -772,7 +850,23 @@ string parenth(string s)
                                 {
                                     nbCro++;
                                 }
-                                if(!isNotSpe(s[j]) && numPar2==0 && nbCro==0) //si le caractère ne peut pas être dans une variable
+                                if(s[j]=='"')
+                                {
+                                    isInBra=(!isInBra);
+                                    if(!isInBra)
+                                    {
+                                        continue;
+                                    }
+                                }
+                                if(s[j]=='\'')
+                                {
+                                    isInQuo=!isInQuo;
+                                    if(!isInQuo)
+                                    {
+                                        continue;
+                                    }
+                                }
+                                if(!isNotSpe(s[j]) && numPar2==0 && nbCro==0 && j!=(i-1) && !isInQuo && !isInBra) //si le caractère ne peut pas être dans une variable
                                 {
                                     break;
                                 }
@@ -781,7 +875,7 @@ string parenth(string s)
                             unsigned int m;
                             numPar2=0;
                             nbCro=0;
-                            for(m=i+name.size();m<s.size();m++) //m aura pour valeur l'indie juste après la fin du deuxième argument
+                            for(m=i+name.size();m<s.size();m++) //m aura pour valeur l'indice juste après la fin du deuxième argument
                             {
                                 if(s[m]=='(')
                                 {
@@ -809,7 +903,7 @@ string parenth(string s)
                                 {
                                     nbCro--;
                                 }
-                                if(!isNotSpe(s[m]) && numPar2==0 && nbCro==0) //si le caractère ne peut pas être dans une variable
+                                if(!isNotSpe(s[m]) && numPar2==0 && nbCro==0 && m!=i+1) //si le caractère ne peut pas être dans une variable
                                 {
                                     break;
                                 }
@@ -837,7 +931,7 @@ string parenth(string s)
                         }
                    }
                 }
-                else
+                else //cas des instructions générales
                 {
                     unsigned int i;
                     if(sameName)
@@ -917,6 +1011,323 @@ string parenth(string s)
 }
 
 
+
+bool isWellPar(string s, unsigned int _nbFun)
+{
+    bool ret=(_nbFun<=1);
+    unsigned int nbFun=_nbFun;
+    string actualMot="";
+    string actualFun="";
+    int numPar=0;
+    bool isInQuo_=false;
+    bool isInBra_=false;
+    if(s.size()>0)
+    {
+        unsigned int k=0;
+        for(k=0;k<s.size();k++)
+        {
+            if(s[k]=='"')
+            {
+                isInQuo_=!isInQuo_;
+            }
+            if(s[k]=='\'')
+            {
+                isInBra_=!isInBra_;
+            }
+            if(isInQuo_||isInBra_)
+            {
+                continue;
+            }
+            if(isNotSpe(s[k]))
+            {
+                actualMot+=s[k];
+                //cout<<"isNotSpe: "<<s[k]<<endl;
+            }
+            else if(s[k]=='(')
+            {
+                numPar++;
+                if(actualMot.compare("")!=0)
+                {
+                    actualFun=actualMot;
+                    nbFun++;
+                    actualMot="";
+                    string tmp="";
+                    unsigned int l;
+                    int numPar2=1;
+                    bool ok2=false;
+                    if(k<s.size()-1)
+                    {
+                        for(l=k+1;l<s.size();l++)
+                        {
+                            if(ok2)
+                            {
+                                tmp+=s[l];
+                            }
+                            else
+                            {
+                                if(s[l]=='(')
+                                {
+                                    numPar2++;
+                                }
+                                if(s[l]==')' && numPar2==1)
+                                {
+                                    numPar2--;
+                                    ok2=true;
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                    else return false;
+                    return (nbFun<=1)&&isWellPar(tmp,nbFun);
+                }
+                else
+                {
+                    string tmpIn="";
+                    string tmpOut="";
+                    unsigned int l;
+                    int numPar2=1;
+                    bool ok2=false;
+                    if(k<s.size()-1)
+                    {
+                        for(l=k+1;l<s.size();l++)
+                        {
+                            if(ok2)
+                            {
+                                tmpOut+=s[l];
+                            }
+                            else
+                            {
+                                tmpIn+=s[l];
+                                if(s[l]=='(')
+                                {
+                                    numPar2++;
+                                }
+                                if(s[l]==')' && numPar2==1)
+                                {
+                                    numPar2--;
+                                    ok2=true;
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                    else return false;
+                    return (nbFun<=1)&&isWellPar(tmpIn)&&isWellPar(tmpOut,nbFun);
+                }
+            }
+            else if(s[k]==')')
+            {
+                numPar--;
+                actualMot="";
+            }
+            else
+            {
+                if(k<s.size()-1)
+                {
+                    if(s[k]=='+' && s[k+1]=='+')
+                    {
+                        actualFun="++";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='-' && s[k+1]=='-')
+                    {
+                        actualFun="--";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='=' && s[k+1]=='=')
+                    {
+                        actualFun="==";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='!' && s[k+1]=='=')
+                    {
+                        actualFun="!=";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='+' && s[k+1]=='=')
+                    {
+                        actualFun="++";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='-' && s[k+1]=='=')
+                    {
+                        actualFun="-=";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='*' && s[k+1]=='=')
+                    {
+                        actualFun="*=";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='/' && s[k+1]=='=')
+                    {
+                        actualFun="/=";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='>' && s[k+1]=='=')
+                    {
+                        actualFun=">=";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='<' && s[k+1]=='=')
+                    {
+                        actualFun="<=";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='-' && s[k+1]=='>')
+                    {
+                        actualFun="->";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='[')
+                    {
+                        actualFun="[]";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='&' && s[k+1]=='&')
+                    {
+                        actualFun="&&";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='|' && s[k+1]=='|')
+                    {
+                        actualFun="||";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='<' && s[k+1]=='<')
+                    {
+                        actualFun="<<";
+                        k++;
+                        continue;
+                    }
+                    else if(s[k]=='>' && s[k+1]=='>')
+                    {
+                        actualFun=">>";
+                        k++;
+                        continue;
+                    }
+                }
+                if(k<s.size())
+                {
+                    if(s[k]=='.')
+                    {
+                        actualFun=".";
+                        continue;
+                    }
+                    else if(s[k]=='=')
+                    {
+                        actualFun="=";
+                        continue;
+                    }
+                    else if(s[k]=='!')
+                    {
+                        actualFun="!";
+                        continue;
+                    }
+                    else if(s[k]=='+')
+                    {
+                        actualFun="+";
+                        continue;
+                    }
+                    else if(s[k]=='-')
+                    {
+                        actualFun="-";
+                        continue;
+                    }
+                    else if(s[k]=='*')
+                    {
+                        actualFun="*";
+                        continue;
+                    }
+                    else if(s[k]=='/')
+                    {
+                        actualFun="/";
+                        continue;
+                    }
+                    else if(s[k]=='%')
+                    {
+                        actualFun="%";
+                        continue;
+                    }
+                    else if(s[k]=='>')
+                    {
+                        actualFun=">";
+                        continue;
+                    }
+                    else if(s[k]=='<')
+                    {
+                        actualFun="<";
+                        continue;
+                    }
+                }
+            }
+            if(actualFun.compare("")!=0)
+            {
+                cout<<"instruction: "<<actualFun<<endl;
+                nbFun++;
+                actualFun="";
+                actualMot="";
+            }
+        }
+    }
+    ret=(nbFun<=1);
+    return ret;
+}
+
+
+string uselessPar(string s)
+{
+    int size=s.size();
+    unsigned int k=0;
+    int numPar=0;
+    if(size>0)
+    {
+        if(s[0]=='(')
+        {
+            for(k=0;k<s.size();k++)
+            {
+                if(s[k]=='(')
+                {
+                    numPar++;
+                }
+                if(s[k]==')')
+                {
+                    numPar--;
+                }
+                if(numPar==0 && k<s.size()-1)
+                {
+                    return s;
+                }
+                if(numPar==0 && k==s.size()-1)
+                {
+                    if(s.size()>3)
+                    {
+                        return uselessPar(s.substr(1,k-1));
+                    }
+                }
+            }
+        }
+    }
+    return s;
+
+}
+
+
 void Instruction::preCompile(string inst)
 {
     int k=0;
@@ -946,6 +1357,10 @@ void Instruction::preCompile(string inst)
         else
         {
             actual+=inst[k];
+        }
+        if(k==(inst.size()-1) && inst[k]!=';')
+        {
+            cont.push_back(actual);
         }
         k++;
     }
@@ -986,13 +1401,223 @@ void Instruction::preCompile(string inst)
                 type=NewVar_;
             }
 
+            else if(cont[0][0]=='R'&& cont[0][1]=='e' && cont[0][2]=='t' && cont[0][3]=='u' && cont[0][4]=='r' && cont[0][5]=='n')
+            {
+                type=Return_;
+            }
+
         }
         if(type.compare("")==0)
         {
             string crt=cont[0];
             vector<Instruction*> inst;
             unsigned int k=0;
-
+            bool isInQuo_=false;
+            bool isInBra_=false;
+            int numPar=0;
+            string actualMot="";
+            string actualFun="";
+            crt=uselessPar(crt);
+            if(!isWellPar(crt))
+            {
+                crt=parenth(crt);
+            }
+            string s=crt;
+            cont.pop_back();
+            cont.push_back(s);
+            for(k=0;k<crt.size();k++)
+            {
+                if(s[k]=='"')
+                {
+                    isInQuo_=!isInQuo_;
+                }
+                else if(s[k]=='\'')
+                {
+                    isInBra_=!isInBra_;
+                }
+                else if(s[k]=='(' && !isInBra_ && !isInQuo_ && actualMot.compare("")==0)
+                {
+                    numPar++;
+                }
+                else if(s[k]==')' && !isInBra_ && !isInQuo_)
+                {
+                    numPar--;
+                }
+                if(isInQuo_||isInBra_ || (numPar!=0))
+                {
+                    continue;
+                }
+                if(s[k]=='(' && actualMot.compare("")!=0)
+                {
+                    actualFun=actualMot;
+                    actualMot="";
+                }
+                if(isNotSpe(s[k]))
+                {
+                    actualMot+=s[k];
+                    //cout<<"isNotSpe: "<<s[k]<<endl;
+                }
+                else
+                {
+                    if(k<s.size()-1)
+                    {
+                        if(s[k]=='+' && s[k+1]=='+')
+                        {
+                            actualFun=Incr_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='-' && s[k+1]=='-')
+                        {
+                            actualFun=Decr_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='=' && s[k+1]=='=')
+                        {
+                            actualFun=Equal_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='!' && s[k+1]=='=')
+                        {
+                            actualFun=Diff_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='+' && s[k+1]=='=')
+                        {
+                            actualFun=PlusEqual_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='-' && s[k+1]=='=')
+                        {
+                            actualFun=MoinsEqual_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='*' && s[k+1]=='=')
+                        {
+                            actualFun=MultEqual_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='/' && s[k+1]=='=')
+                        {
+                            actualFun=DivEqual_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='>' && s[k+1]=='=')
+                        {
+                            actualFun=SupEqual_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='<' && s[k+1]=='=')
+                        {
+                            actualFun=InfEqual_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='-' && s[k+1]=='>')
+                        {
+                            actualFun=Fleche_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='[')
+                        {
+                            actualFun=Cro_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='&' && s[k+1]=='&')
+                        {
+                            actualFun=And_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='|' && s[k+1]=='|')
+                        {
+                            actualFun=Or_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='<' && s[k+1]=='<')
+                        {
+                            actualFun=In_;
+                            k++;
+                            continue;
+                        }
+                        else if(s[k]=='>' && s[k+1]=='>')
+                        {
+                            actualFun=Out_;
+                            k++;
+                            continue;
+                        }
+                    }
+                    if(k<s.size())
+                    {
+                        if(s[k]=='.')
+                        {
+                            actualFun=Point_;
+                            continue;
+                        }
+                        else if(s[k]=='=')
+                        {
+                            actualFun=Equal_;
+                            continue;
+                        }
+                        else if(s[k]=='!')
+                        {
+                            actualFun=Neg_;
+                            continue;
+                        }
+                        else if(s[k]=='+')
+                        {
+                            actualFun=Plus_;
+                            continue;
+                        }
+                        else if(s[k]=='-')
+                        {
+                            actualFun=Moins_;
+                            continue;
+                        }
+                        else if(s[k]=='*')
+                        {
+                            actualFun=Mult_;
+                            continue;
+                        }
+                        else if(s[k]=='/')
+                        {
+                            actualFun=Div_;
+                            continue;
+                        }
+                        else if(s[k]=='%')
+                        {
+                            actualFun=Reste_;
+                            continue;
+                        }
+                        else if(s[k]=='>')
+                        {
+                            actualFun=Sup_;
+                            continue;
+                        }
+                        else if(s[k]=='<')
+                        {
+                            actualFun=Inf_;
+                            continue;
+                        }
+                    }
+                }
+                if(actualFun.compare("")!=0)
+                {
+                    type=actualFun;
+                    break;
+                }
+            }
 
         }
     }
@@ -1008,6 +1633,7 @@ Instruction::Instruction(string id)
 {
     //name=_name;
     varTmp=new DbVar();
+    varPar=new DbVar();
     string req="select name, argT, retourT, cont, prior, assoc, isOp from instruction where ins_id=\""+id+"\";";
     MYSQL_RES* res=memory->request(req);
     if(res!=NULL)
@@ -1046,13 +1672,15 @@ Instruction::Instruction(string id)
  * Constructeur pour les instructions intermédiaires
  */
 
-Instruction::Instruction(string _name, string _cont)
+Instruction::Instruction(string _name, string _cont, DbVar* _varPar)
 {
     name=_name;
     prior=2;
     assoc="droite";
     brut=_cont;
     isOp=false;
+    varPar=_varPar;
+    varTmp=new DbVar();
     ok=true;
     //cout<<"contenu inst="<<brut<<endl;
     preCompile(_cont);
@@ -1068,6 +1696,7 @@ Instruction::Instruction(string _name, string _cont)
 Instruction::Instruction(string _name, string argS, string retourS, string inst,unsigned int _prior, string _assoc, bool _isOp, bool tmp) {
     name=_name;
     varTmp=new DbVar();
+    varPar=new DbVar();
     brut=inst;
     isOp=_isOp;
     assoc=((_assoc.compare("droite")==0)? "droite" : "gauche");
@@ -1340,7 +1969,8 @@ void Instruction::compile()
             sprintf(id,"%d",k);
             string idStr=id;
             string nameIns=name+idStr;
-            Instruction* ins=new Instruction(nameIns,actual);
+            DbVar* db=new DbVar(varPar,varTmp);
+            Instruction* ins=new Instruction(nameIns,actual,db);
             ins->compile();
         }
     }
@@ -1444,7 +2074,8 @@ void Instruction::compile()
                     char unTmp[4];
                     sprintf(unTmp,"%d",1);
                     string un=unTmp;
-                    If(new Instruction(name+"_"+zero,crtInst1),new Instruction(name+"_"+un,crtInst2));
+                    DbVar* db=new DbVar(varPar,varTmp);
+                    If(new Instruction(name+"_"+zero,crtInst1,db),new Instruction(name+"_"+un,crtInst2,db));
                 }
             }
         }
@@ -1456,6 +2087,13 @@ void Instruction::compile()
     else if(type.compare(While_)==0)
     {
 
+    }
+    else
+    {
+        /*
+         * Ex: Vargen* ret=Plus(inst1,inst2);
+         * retour.push_back(ret);
+         */
     }
 }
 
@@ -1499,7 +2137,11 @@ void Instruction::print()
     {
         cout<<"void"<<endl;
     }
-    cout<<"Contenu: "+brut<<endl;
+    cout<<"Contenu: "<<endl;
+    for(k=0;k<cont.size();k++)
+    {
+        cout<<cont[k]<<endl;
+    }
     char priorId[4];
     sprintf(priorId,"%d",prior);
     string priorStr=priorId;
@@ -1511,5 +2153,10 @@ Instruction::Instruction(const Instruction& orig) {
 }
 
 Instruction::~Instruction() {
+    arg.clear();
+    argT.clear();
+    //retour.clear();
+    retourT.clear();
+    delete varTmp;
 }
 

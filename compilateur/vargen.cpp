@@ -4,6 +4,38 @@ extern Database* memory;
 
 using namespace std;
 
+extern string intType;
+extern string charType;
+extern string boolType;
+extern string floatType;
+extern string stringType;
+
+
+bool isContainer(string name)
+{
+    bool ret=false;
+    if(name.size()>5)
+    {
+        if(name[0]=='L' && name[1]=='i' && name[2]=='s' && name[3]=='t' && name[4]=='_')
+        {
+            ret=true;
+        }
+    }
+    else if(name.size()>6)
+    {
+        if(name[0]=='Q' && name[1]=='u' && name[2]=='e' && name[3]=='u' && name[4]=='e' && name[5]=='_')
+        {
+            ret=true;
+        }
+        else if(name[0]=='S' && name[1]=='t' && name[2]=='a' && name[3]=='c' && name[4]=='k' && name[5]=='_')
+        {
+            ret=true;
+        }
+    }
+    return ret;
+}
+
+
 
 /*
  *_arg est de la forme "name1:type1;name2:type2;..."
@@ -52,6 +84,38 @@ std::vector<Vargen*> makeArgVar(string _arg)
 }
 
 /*
+ * _arg est de la forme "var1;var2..."
+ */
+std::vector<Vargen*> makeArgCont(string _arg, string type)
+{
+    std::vector<Vargen*> ret;
+    string name="";
+    bool okName=true;
+    unsigned int k=0;
+    while(k<_arg.size())
+    {
+        if(_arg[k]==';')
+        {
+            if(isBasic(type) || type.compare("string")==0)
+            {
+               ret.push_back(new Vargen(name,type,name));
+            }
+            else
+            {
+                ret.push_back(new Vargen(name,type));
+            }
+            okName=true;
+        }
+        else if(okName)
+        {
+            name+=_arg[k];
+        }
+        k++;
+    }
+    return ret;
+}
+
+/*
  *Créée la string _arg en bdd si elle n'existe pas
  */
 
@@ -80,47 +144,13 @@ void storeString(string _arg)
     mysql_free_result(res);
     if(createStr)
     {
-        char sizeTmp[4];
-        sprintf(sizeTmp,"%d",_arg.size());
-        string req1="insert into list_char(cont,size) values(\""+_arg+"\","+sizeTmp+");";
-        memory->insert(req1);
-
-        req1="select list_char_id, cont from list_char where cont=\""+_arg+"\";";
-        string idTmp="";
-        res=memory->request(req1);
-        string storeCont="";
-        if(res!=NULL)
-        {
-            MYSQL_ROW row;
-            if(row=mysql_fetch_row(res))
-            {
-               idTmp=(row[0]? row[0]: "");
-               storeCont=(row[1]? row[1]: "");
-               char size2Tmp[4];
-               unsigned int size2=2*_arg.size();
-               sprintf(size2Tmp,"%d",size2);
-               string size2Str=size2Tmp;
-               if(storeCont.compare(_arg)!=0)
-               {
-                   cout<<"augmentation de la capacité des string"<<endl;
-                   string req2="alter table list_char modify cont varchar("+size2Str+");";
-                   memory->insert(req2);
-                   req2="update list_char set cont=\""+_arg+"\" where list_char_id="+idTmp+";";
-                   memory->insert(req2);
-               }
-            }
-            else
-            {
-                cout<<"erreur insert into list_char a echoué"<<endl;
-            }
-        }
-        else
-        {
-            cout<<"Erreur requete sql: \""+req+"\""<<endl;
-        }
+        string idTmp=insertIntoList(_arg);
+        char sizeStr[4];
+        sprintf(sizeStr,"%d",_arg.size());
+        string sizeTmp=sizeStr;
         if(idTmp.compare("")!=0)
         {
-            req1="insert into string(string_id,size) values("+idTmp+","+sizeTmp+");";
+            string req1="insert into string(string_id,size) values("+idTmp+","+sizeTmp+");";
             //cout<<"requete finale: "<<req1<<endl;
             memory->insert(req1);
         }
@@ -262,36 +292,144 @@ void storeString(string _arg)
 
 
 
+Vargen::Vargen(Vargen *var)
+{
+    name=var->name;
+    ok=var->ok;
+    type=var->type;
+    if(isBasic(type->name))
+    {
+        string _type=type->name;
+        if(_type.compare(intType)==0)
+        {
+            valInt=var->valInt;
+        }
+        else if(_type.compare(charType)==0)
+        {
+            valChar=var->valChar;
+        }
+        else if(_type.compare(floatType)==0)
+        {
+            valFloat=var->valFloat;
+        }
+        else if(_type.compare(boolType)==0)
+        {
+            valBool=var->valBool;
+        }
+        else if(_type.compare(stringType)==0)
+        {
+            valStr=var->valStr;
+        }
+    }
+    else
+    {
+        unsigned int k;
+        for(k=0;k<var->arg.size();k++)
+        {
+            arg.push_back(new Vargen(var->arg[k]));
+        }
+    }
+}
+
+
 /*
- * ce constructeur crée une variable dans la bdd ou en recherche une exitente de nom _name
+ * Insertion dans la table list_char
+ * return l'identifiant
+ */
+string insertIntoList(string _arg)
+{
+    string idTmp="";
+    char sizeTmp[4];
+    sprintf(sizeTmp,"%d",_arg.size());
+    string req1="insert into list_char(cont,size) values(\""+_arg+"\","+sizeTmp+");";
+    memory->insert(req1);
+    string req2="select list_char_id,cont from list_char where list_char_id in (select max(list_char_id) in list_char);";
+    MYSQL_RES* res=memory->request(req2);
+    if(res!=NULL)
+    {
+        MYSQL_ROW row;
+        if(row=mysql_fetch_row(res))
+        {
+            idTmp=(row[0]? row[0]: "");
+            string storeCont=(row[1]? row[1]: "");
+            char size2Tmp[4];
+            unsigned int size2=2*_arg.size();
+            sprintf(size2Tmp,"%d",size2);
+            string size2Str=size2Tmp;
+            if(storeCont.compare(_arg)!=0)
+            {
+                cout<<"augmentation de la capacité des string"<<endl;
+                string req2="alter table list_char modify cont varchar("+size2Str+");";
+                memory->insert(req2);
+                req2="update list_char set cont=\""+_arg+"\" where list_char_id="+idTmp+";";
+                memory->insert(req2);
+            }
+        }
+    }
+    else
+    {
+        cout<<"Erreur requete sql:"<<req2<<endl;
+    }
+    return idTmp;
+}
+
+/*
+ * ce constructeur crée une variable dans la bdd ou en recherche une existante de nom _name
  * _type="nameType"
  * Si _arg="nameVar1:type1;nameVar2:type2;..." alors il créé une nouvelle variable sinon il la recherche dans la bdd
  * arg="val" ssi la variable est basique ou si son type est string
  * isNew n'est pas encore utilisé
  */
 
-Vargen::Vargen(string _name, string _type, string _arg)
+Vargen::Vargen(string _name, string _type, string _arg, bool _tmp)
 {
     name=_name;
-    type=new Type(_type);
-
+    if(!isBasic(_type))
+    {
+        type=new Type(_type);
+    }
+    tmp=_tmp;
     if(_type.compare("string")==0)
     {
         valStr=_arg;
-        //on recherche si la string existe déja en bdd
-        string req="select cont from list_char where cont=\""+_arg+"\";";
+        storeString(_arg);
+    }
+    else if(type->isContainer())
+    {
+        string typeCont="";
+        unsigned int i;
+        bool under=false;
+        while(i<_type.size())
+        {
+            if(_type[i]=='_' && !under)
+            {
+                under=true;
+                continue;
+            }
+            if(under)
+            {
+                typeCont+=_type[i];
+            }
+            else
+            {
+                continue;
+            }
+        }
+        arg=makeArgCont(_arg,typeCont);
+        //on recherche si le conteneur existe déja en bdd _arg=val1;val2;...;
+        string req="select list_char_id from list_char where cont=\""+_arg+"\";";
         MYSQL_RES* res=memory->request(req);
-        bool createStr=false;
+        bool createCont=false;
         if(res!=NULL)
         {
             MYSQL_ROW row;
-            if(row=mysql_fetch_row(res))//si la string exite déja, il n'y a rien à faire
+            if(row=mysql_fetch_row(res))//si le conteneur existe déja, il n'y a rien à faire
             {
 
             }
-            else// sinon il faut la créer
+            else// sinon il faut le créer
             {
-                createStr=true;
+                createCont=true;
             }
         }
         else
@@ -299,35 +437,14 @@ Vargen::Vargen(string _name, string _type, string _arg)
            cout<<"Erreur requete sql: \""+req+"\""<<endl;
         }
         mysql_free_result(res);
-        if(createStr)
+        if(createCont)
         {
-            char sizeTmp[4];
-            sprintf(sizeTmp,"%d",_arg.size());
-            string req1="insert into list_char(cont,size) values(\""+_arg+"\","+sizeTmp+");";
-            memory->insert(req1);
-
-            req1="select list_char_id from list_char where cont=\""+_arg+"\";";
-            string idTmp="";
-            res=memory->request(req1);
-            if(res!=NULL)
-            {
-                MYSQL_ROW row;
-                if(row=mysql_fetch_row(res))
-                {
-                   idTmp=(row[0]? row[0]: "");
-                }
-                else
-                {
-                    cout<<"erreur insert into list_char a echoué"<<endl;
-                }
-            }
-            else
-            {
-                cout<<"Erreur requete sql: \""+req+"\""<<endl;
-            }
+            string idTmp=insertIntoList(_arg);
             if(idTmp.compare("")!=0)
             {
-                req1="insert into string(string_id,size) values("+idTmp+","+sizeTmp+");";
+                char sizeTmp[4];
+                sprintf(sizeTmp,"%d",arg.size());
+                string req1="insert into "+_type+"("+_type+"_id,size) values("+idTmp+","+sizeTmp+");";
                 //cout<<"requete finale: "<<req1<<endl;
                 memory->insert(req1);
             }
@@ -408,6 +525,13 @@ Vargen::Vargen(string _name, string _type, string _arg)
                     valStr=val;
                     ok=true;
                 }
+                else if(_type.compare("float")==0)
+                {
+                    type=new Type(_type,true);
+                    char* valTmp=(char*)val.c_str();
+                    sscanf(valTmp,"%f",&valFloat);
+                    ok=true;
+                }
                 else
                 {
                     type=new Type(_type);
@@ -439,6 +563,10 @@ Vargen::Vargen(string _name, string _type, string _arg)
                                cout<<"Erreur requete sql: \""+req+"\""<<endl;
                             }
                             mysql_free_result(res);
+                        }
+                        else if(isContainer(crtAtt->type))
+                        {
+
                         }
                         else if(isBasic(crtAtt->type))
                         {
@@ -611,7 +739,7 @@ Instruction* Vargen::getMeth(string id)
 
 void Vargen::deleteVar()
 {
-    if(!isBasic(type->name))
+    if(!isBasic(type->name) && tmp)
     {
         if(type->cont.size()>0)
         {
@@ -621,6 +749,109 @@ void Vargen::deleteVar()
     }
     //~Vargen();
 }
+
+
+void Vargen::setVal(Vargen *val)
+{
+    if(type->name.compare(intType)==0)
+    {
+        if(val->type->name.compare(intType)==0)
+        {
+            valInt=val->valInt;
+        }
+        else
+        {
+            cout<<"Erreur: Aucun opérateur entre "<<type->name<<" et "<<val->type->name<<endl;
+        }
+    }
+    else if(type->name.compare(floatType)==0)
+    {
+        if(val->type->name.compare(intType)==0)
+        {
+            valFloat=val->valInt;
+        }
+        else if(val->type->name.compare(floatType)==0)
+        {
+            valFloat=val->valInt;
+        }
+        else
+        {
+            cout<<"Erreur: Aucun opérateur entre "<<type->name<<" et "<<val->type->name<<endl;
+        }
+    }
+    else if(type->name.compare(charType)==0)
+    {
+        if(val->type->name.compare(charType)==0)
+        {
+           valChar=val->valChar;
+        }
+        else
+        {
+            cout<<"Erreur: Aucun opérateur entre "<<type->name<<" et "<<val->type->name<<endl;
+        }
+    }
+    else if(type->name.compare(boolType)==0)
+    {
+        if(val->type->name.compare(boolType)==0)
+        {
+           valBool=val->valBool;
+        }
+        else
+        {
+            cout<<"Erreur: Aucun opérateur entre "<<type->name<<" et "<<val->type->name<<endl;
+        }
+    }
+    else if(type->name.compare(stringType)==0)
+    {
+        if(val->type->name.compare(charType)==0)
+        {
+           valStr=val->valChar;
+        }
+        else if(val->type->name.compare(intType)==0)
+        {
+            char tmpInt[4];
+            sprintf(tmpInt,"%d",val->valInt);
+            valStr=tmpInt;
+        }
+        else if(val->type->name.compare(floatType)==0)
+        {
+            char tmpFloat[8];
+            sprintf(tmpFloat,"%f",val->valFloat);
+            valStr=tmpFloat;
+        }
+        else if(val->type->name.compare(stringType)==0)
+        {
+            valStr=val->valStr;
+        }
+        else
+        {
+            cout<<"Erreur: Aucun opérateur entre "<<type->name<<" et "<<val->type->name<<endl;
+        }
+    }
+    else if(type->name.compare(val->type->name)==0)
+    {
+        if(arg.size()==val->arg.size())
+        {
+            unsigned int k;
+            for(k=0;k<arg.size();k++)
+            {
+                arg[k]->setVal(val->arg[k]);
+            }
+        }
+    }
+    else
+    {
+        cout<<"Erreur: Aucun opérateur entre "<<type->name<<" et "<<val->type->name<<endl;
+    }
+}
+
+
+Instruction* Vargen::getMeth(string name, string argT, string retourT)
+{
+    string id=getIdInstruction(name,argT,retourT);
+    return type->getMeth(id);
+}
+
 
 void Vargen::print()
 {
@@ -664,6 +895,8 @@ void Vargen::print()
         cout<<"cette variable est mal initialisée"<<endl;
     }
 }
+
+
 
 
 Vargen::~Vargen()

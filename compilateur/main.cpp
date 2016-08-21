@@ -8,6 +8,7 @@ MYSQL data;
 
 int main(int argc, char *argv[])
 {
+    //cout<<"lol"<<endl;
     memory=new Database();
     //Type* pre=new Type("determinant","","ins_id:int unsigned;name:string;argT:string;retourT:string;cont:string;","");
     //Type* ins= new Type("instruction");
@@ -18,12 +19,22 @@ int main(int argc, char *argv[])
     //sprintf(idTmp,"%d",);
     //string id=getIdInstruction("==","","");
     //Instruction* ins=new Instruction("<","","","",8,"droite",true);
-    string s="u+a-b*c";
-    //string s="a+b+c+d";
-    string ret;
-    ret=parenth(s);
+    //string s="tab[k]->lol+a-b*c;";
+    //DbVar* db=new DbVar();
+    //Instruction* inst=new Instruction("lol",s,db);
+    //inst->print();
+    //cout<<"lol"<<endl;
+    string list="list";
+    string intS="int";
+    Type* typ=new Type(list,intS);
+    //string s="s=\"a+b\"+b";
+    //string s1="((a+b))";
+    //string ret;
+    //ret=parenth(s);
+    //ret=uselessPar(s1);
     //cout<<"après parenth"<<endl;
-    cout<<"retour: "<<ret<<endl;
+    //cout<<"retour: "<<ret<<endl;
+    //cout<<"isWellParent= "<<isWellPar(ret)<<endl;
     //Instruction* ins2=new Instruction("%","","","",5,"droite",true);
     //Instruction* ins3=new Instruction(">","","","",8,"droite",true);
     //Instruction* ins=new Instruction(id);

@@ -21,6 +21,11 @@ Database::Database()
     {
         mysql_query(&data,"set names utf8");
     }
+    else
+    {
+        cout<<"Erreur d'accès à la base de données"<<endl;
+        ok=false;
+    }
 }
 
 

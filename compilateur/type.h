@@ -51,6 +51,8 @@ public:
     void deleteMeth(std::string _name);
     void deleteType();
 
+    bool isContainer();
+
     //GetMethode
     Instruction* getMeth(std::string id);
 

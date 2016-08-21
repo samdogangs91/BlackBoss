@@ -8,6 +8,23 @@ DbVar::DbVar()
 }
 
 
+DbVar::DbVar(DbVar* orig, DbVar* orig2)
+{
+    map<string,Vargen*>::iterator it;
+    for(it=orig->cont.begin();it!=orig->cont.end();it++)
+    {
+        insert(it->second);
+    }
+    if(orig2!=NULL)
+    {
+        for(it=orig2->cont.begin();it!=orig2->cont.end();it++)
+        {
+            insert(it->second);
+        }
+    }
+}
+
+
 void DbVar::insert(Vargen *var)
 {
     cont.insert(pair<std::string,Vargen*>(var->name,var));
@@ -22,9 +39,27 @@ Vargen* DbVar::find(std::string name, std::string type)
     {
         return it->second;
     }
-    else
+    else if(type.compare("")!=0)
     {
-        return new Vargen(name,type);
+        var=new Vargen(name,type);
+        insert(var);
     }
     return var;
+}
+
+
+void DbVar::erase(string name)
+{
+    map<string,Vargen*>::iterator it=cont.find(name);
+    if(it!=cont.end())
+    {
+        Vargen* var=it->second;
+        var->deleteVar();
+        cont.erase(it);
+    }
+}
+
+DbVar::~DbVar()
+{
+    cont.clear();
 }

@@ -9,6 +9,7 @@ string stringType="string";
 string intType="int";
 string charType="char";
 string boolType="bool";
+string floatType="float";
 
 string listType="list";
 string queueType="queue";
@@ -30,7 +31,7 @@ string newString(string s)
 
 bool isBasic(string s)
 {
-    return (s.compare(intType)==0)||(s.compare(charType)==0)||(s.compare(boolType)==0);
+    return (s.compare(intType)==0)||(s.compare(charType)==0)||(s.compare(boolType)==0)||(s.compare(floatType)==0);
 }
 
 vector<Attribut*> makeAtt(string contS) //lis les attributs d'une string codée sous la forme "nameAtt1:typeAtt1;nameAtt2:typeAtt2;..."
@@ -100,7 +101,7 @@ vector<Instruction*> makeMeth(string cont)
 Type::Type(std::string _name, bool estBasic)
 {
     name=_name;
-    if(!estBasic)
+    if(!estBasic && _name.compare(stringType)!=0)
     {
         string req="select cont, descr, meth from type where name=\""+_name+"\";";
         string contS="";
@@ -225,11 +226,9 @@ Type::Type(string _name, string _desc, string _cont, string _meth)
                    okPk=true;
                }
            }
-           if(!okPk && (pk.compare(intType)!=0)&&(pk.compare(charType)!=0)&&(pk.compare(boolType)!=0))
+           if(!okPk && !isBasic(pk))
            {
-
-
-               cout<<"après free pk="<<pk<<endl;
+               //cout<<"après free pk="<<pk<<endl;
                while(!isBasic(pk))//while
                {
                    string req_pk="select cont from type where name=\""+pk+"\";";
@@ -344,6 +343,7 @@ Type::Type(string _name, string _desc, string _cont, string _meth)
 
 Type::Type(string container, string content)
 {
+    cout<<"lol"<<endl;
     name=container+"_"+content;
     string req="select name from type where name=\""+name+"\";";
     MYSQL_RES* res=memory->request(req);
@@ -356,26 +356,29 @@ Type::Type(string container, string content)
         }
         else
         {
+
             if(container.compare(listType)==0)
             {
-                string req1="insert into type(name,descr,cont,meth) values(\""+name+"\",\"\",\""+name+"_id;\",\"[];=;>=;==;+;\");";
+                string req1="insert into type(name,descr,cont,meth) values(\""+name+"\",\"\",\""+name+"_id:int;cont:string;size:int\",\"[];=;>=;==;+;\");";
                 memory->insert(req1);
-                string req2="create table "+name+"("+name+"_id int unsigned auto_increment primary key,cont varchar(100),size int);";
+                string req2="create table "+name+"("+name+"_id int unsigned auto_increment primary key,cont int unsigned, constraint `fk_constraint_"+name+"_cont` foreign key (cont) references list_char(list_char_id) on delete cascade,size int);";
                 cout<<req2<<endl;
                 memory->request(req2);
             }
             else if(container.compare(queueType)==0)
             {
-                string req1="insert into type(name,descr,cont,meth) values(\""+name+"\",\"\",\""+name+"_id;\",\"[];=;>=;==;+;\");";
+                string req1="insert into type(name,descr,cont,meth) values(\""+name+"\",\"\",\""+name+"_id:int;cont:string;size:int\",\"[];=;>=;==;+;\");";
                 memory->insert(req1);
-                string req2="create table name("+name+"_id int unsigned auto_increment primary key,cont varchar(100),size int);";
+                string req2="create table "+name+"("+name+"_id int unsigned auto_increment primary key,cont int unsigned, constraint `fk_constraint_"+name+"_cont` foreign key (cont) references list_char(list_char_id) on delete cascade,size int);";
+                cout<<req2<<endl;
                 memory->request(req2);
             }
             else if(container.compare(stackType)==0)
             {
-                string req1="insert into type(name,descr,cont,meth) values(\""+name+"\",\"\",\""+name+"_id;\",\"[];=;>=;==;+;\");";
+                string req1="insert into type(name,descr,cont,meth) values(\""+name+"\",\"\",\""+name+"_id:int;cont:string;size:int\",\"[];=;>=;==;+;\");";
                 memory->insert(req1);
-                string req2="create table name("+name+"_id int unsigned auto_increment primary key,cont varchar(100),size int);";
+                string req2="create table "+name+"("+name+"_id int unsigned auto_increment primary key,cont int unsigned, constraint `fk_constraint_"+name+"_cont` foreign key (cont) references list_char(list_char_id) on delete cascade,size int);";
+                cout<<req2<<endl;
                 memory->request(req2);
             }
             else
@@ -542,9 +545,36 @@ void Type::deleteMeth(string _name)
 Instruction* Type::getMeth(string id)
 {
     Instruction* ret=NULL;
-    Instruction* inst=new Instruction(id);
-    if(inst->ok) ret=inst;
-    else delete inst;
+    if(id.compare("")!=0)
+    {
+        Instruction* inst=new Instruction(id);
+        if(inst->ok) ret=inst;
+        else delete inst;
+    }
+    return ret;
+}
+
+bool Type::isContainer()
+{
+    bool ret=false;
+    if(name.size()>5)
+    {
+        if(name[0]=='L' && name[1]=='i' && name[2]=='s' && name[3]=='t' && name[4]=='_')
+        {
+            ret=true;
+        }
+    }
+    else if(name.size()>6)
+    {
+        if(name[0]=='Q' && name[1]=='u' && name[2]=='e' && name[3]=='u' && name[4]=='e' && name[5]=='_')
+        {
+            ret=true;
+        }
+        else if(name[0]=='S' && name[1]=='t' && name[2]=='a' && name[3]=='c' && name[4]=='k' && name[5]=='_')
+        {
+            ret=true;
+        }
+    }
     return ret;
 }
 

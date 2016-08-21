@@ -15,7 +15,8 @@ SOURCES += main.cpp \
     type.cpp \
     Database.cpp \
     attribut.cpp \
-    dbvar.cpp
+    dbvar.cpp \
+    operator.cpp
 
 HEADERS += \
     Instruction.h \
