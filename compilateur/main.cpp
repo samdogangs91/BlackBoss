@@ -19,14 +19,21 @@ int main(int argc, char *argv[])
     //sprintf(idTmp,"%d",);
     //string id=getIdInstruction("==","","");
     //Instruction* ins=new Instruction("<","","","",8,"droite",true);
-    //string s="tab[k]->lol+a-b*c;";
-    //DbVar* db=new DbVar();
-    //Instruction* inst=new Instruction("lol",s,db);
+    //string s="a+b+c+d;";
+    //string ret=parenth(s);
+    //cout<<ret<<endl;
+
+    DbVar* db=new DbVar();
+    string s="x";
+    Instruction* inst=new Instruction("lol",s,db);
+    inst->print();
+    inst->compile();
     //inst->print();
     //cout<<"lol"<<endl;
-    string list="list";
-    string intS="int";
-    Type* typ=new Type(list,intS);
+    //string list="list";
+    //string intS="int";
+
+    //Type* typ=new Type(list,intS);
     //string s="s=\"a+b\"+b";
     //string s1="((a+b))";
     //string ret;

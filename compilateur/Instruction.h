@@ -88,7 +88,7 @@ void Set(Vargen* var, Instruction* inst);//operator =
 Vargen* getAtt(Instruction* var, std::string att); //operator ->
 Instruction* getMeth(Vargen* var, std::string name, std::string argT="",std::string retourT="");
 Vargen* Cro(Instruction* inst, Instruction* num);
-Vargen* Point(Instruction* inst1, Instruction* inst2);
+Vargen* Point(Instruction* instVar, std::string att);
 void In(std::string stream, Instruction* inst);
 void Out(std::string stream, Instruction* inst);
 
@@ -100,10 +100,11 @@ Vargen* Plus(Instruction* inst1, Instruction* inst2);
 Vargen* Moins(Instruction* inst1, Instruction* inst2);
 Vargen* Mult(Instruction* inst1, Instruction* inst2);
 Vargen* Div(Instruction* inst1, Instruction* inst2);
-Vargen* PlusEqual(Instruction* inst1, Instruction* inst2);
-Vargen* MoinsEqual(Instruction* inst1, Instruction* inst2);
-Vargen* MultEqual(Instruction* inst1, Instruction* inst2);
-Vargen* DivEqual(Instruction* inst1, Instruction* inst2);
+Vargen* Reste(Instruction* inst1, Instruction* inst2);
+void PlusEqual(Instruction* inst1, Instruction* inst2);
+void MoinsEqual(Instruction* inst1, Instruction* inst2);
+void MultEqual(Instruction* inst1, Instruction* inst2);
+void DivEqual(Instruction* inst1, Instruction* inst2);
 
 
 

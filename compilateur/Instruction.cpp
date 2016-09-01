@@ -18,6 +18,16 @@ string NewVar_="NewVar";
 string Bool_="Bool";
 string Prog="Program";
 string Return_="Return";
+string Identity_="Identity";
+string DeleteVar_="DeleteVar";
+string NewInst_="NewInst";
+string NewType_="NewType";
+string AddAtt_="AddAtt";
+string AddMeth_="AddMeth";
+string ModifAtt_="ModifAtt";
+string DeleteAtt_="DeleteAtt";
+string DeleteMeth_="DeleteMeth";
+
 
 //operateur pour les nombres
 string SupEqual_="SupEqual";
@@ -538,18 +548,18 @@ string parenth(string s)
                     isEqual=true;
                     if(inst[k]->assoc.compare("gauche")==0)
                     {                        
-                        name=inst[k]->name;
-                        isOp=inst[k]->isOp;
-                        inst.erase(inst.begin());
+                        name=inst[k+1]->name;
+                        isOp=inst[k+1]->isOp;
+                        inst.erase(inst.begin()+1);
+                        sameName=(inst[k]->name.compare(inst[k+1]->name)==0);
                         isLeft=true;
                         cout<<"isEqual, assoc gauche et name="<<name<<endl;
                     }
                     else
                     {
-                        name=inst[k+1]->name;
-                        isOp=inst[k+1]->isOp;
-                        inst.erase(inst.begin()+1);
-                        sameName=(inst[k]->name.compare(inst[k+1]->name)==0);
+                        name=inst[k]->name;
+                        isOp=inst[k]->isOp;
+                        inst.erase(inst.begin());
                         cout<<"isEqual, assoc droite et name="<<name<<endl;
                         //isRight=true;
                     }
@@ -674,7 +684,7 @@ string parenth(string s)
                        }
                        else
                        {
-                           if(isInst1 || (isEqual && isLeft))
+                           if(isInst1 || (isEqual && !isLeft))
                            {
                                ret+='(';
                                for(l=0;l<s.size();l++)
@@ -973,7 +983,7 @@ string parenth(string s)
                     }
                     else
                     {
-                        if(isInst1 || (isEqual && isLeft))
+                        if(isInst1 || (isEqual && !isLeft))
                         {
                             ret+='(';
                             ret+=name;
@@ -1405,7 +1415,55 @@ void Instruction::preCompile(string inst)
             {
                 type=Return_;
             }
+            else if(cont[0][0]=='N'&& cont[0][1]=='e' && cont[0][2]=='w' && cont[0][3]=='V' && cont[0][4]=='a' && cont[0][5]=='r')
+            {
+                type=NewVar_;
+            }
+            else if(cont[0][0]=='A'&& cont[0][1]=='d' && cont[0][2]=='d' && cont[0][3]=='A' && cont[0][4]=='t' && cont[0][5]=='t')
+            {
+                type=AddAtt_;
+            }
 
+        }
+        if(cont[0].size()>7 && type.compare("")==0)
+        {
+            if(cont[0][0]=='A'&& cont[0][1]=='d' && cont[0][2]=='d' && cont[0][3]=='M' && cont[0][4]=='e' && cont[0][5]=='t' && cont[0][6]=='h')
+            {
+                type=AddMeth_;
+            }
+            else if(cont[0][0]=='N'&& cont[0][1]=='e' && cont[0][2]=='w' && cont[0][3]=='T' && cont[0][4]=='y' && cont[0][5]=='p' && cont[0][6]=='e')
+            {
+                type=NewType_;
+            }
+            else if(cont[0][0]=='N'&& cont[0][1]=='e' && cont[0][2]=='w' && cont[0][3]=='I' && cont[0][4]=='n' && cont[0][5]=='s' && cont[0][6]=='t')
+            {
+                type=NewInst_;
+            }
+        }
+        if(cont[0].size()>8 && type.compare("")==0)
+        {
+            if(cont[0][0]=='M'&& cont[0][1]=='o' && cont[0][2]=='d' && cont[0][3]=='i' && cont[0][4]=='f' && cont[0][5]=='A' && cont[0][6]=='t' && cont[0][7]=='t')
+            {
+                type=ModifAtt_;
+            }
+        }
+        if(cont[0].size()>9 && type.compare("")==0)
+        {
+            if(cont[0][0]=='D'&& cont[0][1]=='e' && cont[0][2]=='l' && cont[0][3]=='e' && cont[0][4]=='t' && cont[0][5]=='e' && cont[0][6]=='V' && cont[0][7]=='a' && cont[0][8]=='r')
+            {
+                type=DeleteVar_;
+            }
+            else if(cont[0][0]=='D'&& cont[0][1]=='e' && cont[0][2]=='l' && cont[0][3]=='e' && cont[0][4]=='t' && cont[0][5]=='e' && cont[0][6]=='A' && cont[0][7]=='t' && cont[0][8]=='t')
+            {
+                type=DeleteAtt_;
+            }
+        }
+        if(cont[0].size()>10 && type.compare("")==0)
+        {
+            if(cont[0][0]=='D'&& cont[0][1]=='e' && cont[0][2]=='l' && cont[0][3]=='e' && cont[0][4]=='t' && cont[0][5]=='e' && cont[0][6]=='M' && cont[0][7]=='e' && cont[0][8]=='t' && cont[0][9]=='h')
+            {
+                type=DeleteMeth_;
+            }
         }
         if(type.compare("")==0)
         {
@@ -1619,6 +1677,10 @@ void Instruction::preCompile(string inst)
                 }
             }
 
+        }
+        if(type.compare("")==0)
+        {
+            type=Identity_;
         }
     }
     ok=((cont.size()>1)&&(type.compare(Prog)==0))||((cont.size()==1) && (type.compare(Prog)!=0));
@@ -1955,6 +2017,63 @@ string getIdInstruction(string name, string argT, string retourT)
 }
 
 
+/*
+ * renvoie un vector de string correspondant aux arguments contenus dans s
+ * s=(arg1+sep+arg2+sep+...);
+ * Ex: s=(arg1;arg2;...);
+ */
+vector<string> getArg(string s,char sep)
+{
+    vector<string> ret;
+    unsigned int k;
+    int numPar=0;
+    int numSep=0;
+    string actual="";
+    for(k=0;k<s.size();k++)
+    {
+        if(s[k]=='(')
+        {
+            if(numPar!=0)
+            {
+                actual+=s[k];
+            }
+            else
+            {
+                continue;
+            }
+            numPar++;
+            continue;
+        }
+        if(s[k]==')')
+        {
+            if(numPar==0)
+            {
+                cout<<"Erreur: trop de parenthèses fermantes"<<endl;
+                break;
+            }
+            else
+            {
+                actual+=s[k];
+            }
+            numPar--;
+            continue;
+        }
+        if(numPar>1)
+        {
+            actual+=s[k];
+        }
+        if(numPar==1)
+        {
+            if(s[k]==sep)
+            {
+                ret.push_back(actual);
+                actual="";
+            }
+        }
+    }
+    return ret;
+}
+
 void Instruction::compile()
 {
     unsigned int k=0;
@@ -2088,7 +2207,7 @@ void Instruction::compile()
     {
 
     }
-    else
+    else if(type.compare("")!=0)
     {
         /*
          * Ex: Vargen* ret=Plus(inst1,inst2);
