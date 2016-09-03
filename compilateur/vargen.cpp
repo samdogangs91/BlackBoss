@@ -9,6 +9,7 @@ extern string charType;
 extern string boolType;
 extern string floatType;
 extern string stringType;
+extern string signalType;
 
 
 bool isContainer(string name)
@@ -384,10 +385,7 @@ string insertIntoList(string _arg)
 Vargen::Vargen(string _name, string _type, string _arg, bool _tmp)
 {
     name=_name;
-    if(!isBasic(_type))
-    {
-        type=new Type(_type);
-    }
+    type=new Type(_type);
     tmp=_tmp;
     if(_type.compare("string")==0)
     {
@@ -453,6 +451,7 @@ Vargen::Vargen(string _name, string _type, string _arg, bool _tmp)
     }
     else
     {
+        //cout<<"avant makeArgvar"<<endl;
         arg=makeArgVar(_arg);
         if(arg.size()>0) //création d'une nouvelle variable dans la bdd
         {
@@ -501,36 +500,66 @@ Vargen::Vargen(string _name, string _type, string _arg, bool _tmp)
 
                 if(_type.compare("int")==0)
                 {
+                    delete type;
                     type=new Type(_type,true);
                     char* valTmp=(char*)val.c_str();
-                    sscanf(valTmp,"%d",&valInt);
-                    ok=true;
+                    int res=sscanf(valTmp,"%d",&valInt);
+                    sscanf(valTmp,"%*[\n]");
+                    if(res==1)
+                    {
+                        ok=true;
+                    }
+                    else
+                    {
+                        valInt=0;
+                        ok=false;
+                    }
                 }
                 else if(_type.compare("char")==0)
                 {
+                    delete type;
                     type=new Type(_type,true);
                     char* valTmp=(char*)val.c_str();
-                    sscanf(valTmp,"%c",&valChar);
-                    ok=true;
+                    int res=sscanf(valTmp,"%c",&valChar);
+                    sscanf(valTmp,"%*[\n]");
+                    ok=(res==1);
+                    if(!ok)
+                    {
+                        valChar='\0';
+                    }
                 }
                 else if(_type.compare("bool")==0)
                 {
+                    delete type;
                     type=new Type(_type,true);
+                    //cout<<"bool="<<val<<endl;
                     valBool=(val.compare("true")==0);
                     ok=true;
                 }
                 else if(_type.compare("string")==0)
                 {
+                    delete type;
                     type=new Type(_type,true);
                     valStr=val;
                     ok=true;
                 }
                 else if(_type.compare("float")==0)
                 {
+                    delete type;
                     type=new Type(_type,true);
                     char* valTmp=(char*)val.c_str();
-                    sscanf(valTmp,"%f",&valFloat);
-                    ok=true;
+                    int res=sscanf(valTmp,"%f",&valFloat);
+                    sscanf(valTmp,"%*[\n]");
+                    ok=(res==1);
+                    if(!ok)
+                    {
+                        valFloat=0;
+                    }
+                }
+                else if(_type.compare(signalType)==0)
+                {
+                    delete type;
+                    type=new Type(_type,true);
                 }
                 else
                 {
@@ -855,7 +884,7 @@ Instruction* Vargen::getMeth(string name, string argT, string retourT)
 
 void Vargen::print()
 {
-    cout<<"->Name:"<<endl;
+    cout<<"->Name:"<<name<<endl;
     cout<<"->Type: "<<type->name<<endl;
     if(isBasic(type->name)||type->name.compare("string")==0)
     {

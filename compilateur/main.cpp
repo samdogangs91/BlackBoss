@@ -23,11 +23,16 @@ int main(int argc, char *argv[])
     //string ret=parenth(s);
     //cout<<ret<<endl;
 
-    DbVar* db=new DbVar();
-    string s="x";
+    vector<DbVar*> db;
+    string s="If(true;(NewVar(x,int,2);Return x+1+1;););";
     Instruction* inst=new Instruction("lol",s,db);
-    inst->print();
+    //inst->print();
     inst->compile();
+    unsigned int k;
+    for(k=0;k<inst->retour.size();k++)
+    {
+        inst->retour[k]->print();
+    }
     //inst->print();
     //cout<<"lol"<<endl;
     //string list="list";

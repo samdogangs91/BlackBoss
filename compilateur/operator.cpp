@@ -8,9 +8,15 @@ extern string charType;
 extern string boolType;
 extern string floatType;
 extern string stringType;
+extern string signalType;
+
+string Continue_="Continue";
+string Break_="Break";
+string Erreur_="Erreur";
+string Retour_="Retour";
 
 
-Vargen* identity(std::string cont, DbVar* varTmp, DbVar* varPar)
+Vargen* identity(std::string cont, vector<DbVar*> varDb)
 {
    //case int
    int res;
@@ -22,7 +28,11 @@ Vargen* identity(std::string cont, DbVar* varTmp, DbVar* varPar)
    if(res==1)
    {
        ret=new Vargen(cont,intType,cont);
-       varTmp->insert(ret);
+       int size=varDb.size();
+       if(size>1)
+       {
+           varDb[size-2]->insert(ret);
+       }
        return ret;
    }
 
@@ -33,7 +43,11 @@ Vargen* identity(std::string cont, DbVar* varTmp, DbVar* varPar)
    if(res==1)
    {
       ret=new Vargen(cont,charType,cont);
-      varTmp->insert(ret);
+      int size=varDb.size();
+      if(size>1)
+      {
+          varDb[size-2]->insert(ret);
+      }
       return ret;
    }
 
@@ -44,7 +58,11 @@ Vargen* identity(std::string cont, DbVar* varTmp, DbVar* varPar)
    if(res==1)
    {
       ret=new Vargen(cont,floatType,cont);
-      varTmp->insert(ret);
+      int size=varDb.size();
+      if(size>1)
+      {
+          varDb[size-2]->insert(ret);
+      }
       return ret;
    }
 
@@ -52,7 +70,11 @@ Vargen* identity(std::string cont, DbVar* varTmp, DbVar* varPar)
    if(cont.compare("true")==0 || cont.compare("false")==0)
    {
       ret=new Vargen(cont,boolType,cont);
-      varTmp->insert(ret);
+      int size=varDb.size();
+      if(size>1)
+      {
+          varDb[size-2]->insert(ret);
+      }
       return ret;
    }
 
@@ -63,15 +85,23 @@ Vargen* identity(std::string cont, DbVar* varTmp, DbVar* varPar)
    if(res==1)
    {
       ret=new Vargen(cont,stringType,cont);
-      varTmp->insert(ret);
+      int size=varDb.size();
+      if(size>1)
+      {
+          varDb[size-2]->insert(ret);
+      }
       return ret;
    }
 
    //case Vargen
-   ret=varPar->find(cont);
-   if(ret==NULL)
+   unsigned int k;
+   for(k=0;k<varDb.size();k++)
    {
-       ret=varTmp->find(cont);
+       ret=varDb[k]->find(cont);
+       if(ret!=NULL)
+       {
+           break;
+       }
    }
 
    return ret;
@@ -86,32 +116,53 @@ Vargen* Return(Instruction* inst)
     {
         ret=new Vargen(inst->retour[0]);
     }
+    int size=inst->varDb.size();
+    if(size>1)
+    {
+        inst->varDb[size-2]->insert(ret);
+    }
     delete inst;
     return ret;
 }
 
 
-Vargen* NewVar(std::string name, std::string type, DbVar* varTmp, std::string arg, bool tmp)
+Vargen* NewVar(std::string name, std::string type, vector<DbVar*> _varDb, std::string arg, bool tmp)
 {
     Vargen* ret=NULL;
-    ret=varTmp->find(name);
+    unsigned int k;
+    for(k=0;k<_varDb.size();k++)
+    {
+        ret=_varDb[k]->find(name);
+        if(ret!=NULL)
+        {
+            break;
+        }
+    }
     if(ret==NULL)
     {
         ret=new Vargen(name,type,arg,tmp);
-        varTmp->insert(ret);
+        int size=_varDb.size();
+        if(size>1)
+        {
+            _varDb[size-2]->insert(ret);
+        }
     }
     else
     {
-        cout<<"La variable "<<name<<" existe déja!"<<endl;
+        cout<<"Attention: La variable "<<name<<" existe déja!"<<endl;
     }
 
     return ret;
 }
 
 
-void deleteVar(string name, DbVar *varTmp)
+void deleteVar(string name, vector<DbVar*> varDb)
 {
-    varTmp->erase(name);
+    unsigned int k;
+    for(k=0;k<varDb.size();k++)
+    {
+        varDb[k]->erase(name);
+    }
 }
 
 
@@ -172,8 +223,8 @@ void deleteMeth(std::string nameType, std::string nameMeth)
 //operator booleen
 Vargen* And(Instruction* inst1, Instruction* inst2)// operator &&
 {
-    //inst1->compile();
-    //inst2->compile();
+    inst1->compile();
+    inst2->compile();
     Vargen* ret=NULL;
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
@@ -214,8 +265,8 @@ Vargen* And(Instruction* inst1, Instruction* inst2)// operator &&
 
 Vargen* Or(Instruction* inst1, Instruction* inst2)// operator ||
 {
-    //inst1->compile();
-    //inst2->compile();
+    inst1->compile();
+    inst2->compile();
     Vargen* ret=NULL;
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
@@ -325,6 +376,8 @@ bool Equal2(Vargen* var1, Vargen* var2)
 Vargen* Equal(Instruction* inst1, Instruction* inst2)//operator ==
 {
     Vargen* ret=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
@@ -353,6 +406,8 @@ Vargen* Equal(Instruction* inst1, Instruction* inst2)//operator ==
 Vargen* Diff(Instruction* inst1, Instruction* inst2)//operator !=
 {
     Vargen* ret=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
@@ -382,6 +437,8 @@ Vargen* Diff(Instruction* inst1, Instruction* inst2)//operator !=
 Vargen* SupEqual(Instruction* inst1, Instruction* inst2)
 {
     Vargen* ret=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
@@ -430,6 +487,8 @@ Vargen* SupEqual(Instruction* inst1, Instruction* inst2)
 Vargen* Sup(Instruction* inst1, Instruction* inst2)
 {
     Vargen* ret=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
@@ -478,6 +537,8 @@ Vargen* Sup(Instruction* inst1, Instruction* inst2)
 Vargen* InfEqual(Instruction* inst1, Instruction* inst2)
 {
     Vargen* ret=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
@@ -526,6 +587,8 @@ Vargen* InfEqual(Instruction* inst1, Instruction* inst2)
 Vargen* Inf(Instruction* inst1, Instruction* inst2)
 {
     Vargen* ret=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
@@ -574,6 +637,7 @@ Vargen* Inf(Instruction* inst1, Instruction* inst2)
 Vargen* Neg(Instruction* inst)
 {
     Vargen* ret=NULL;
+    inst->compile();
     if(inst->retour.size()==1)
     {
         Vargen* var=inst->retour[0];
@@ -596,6 +660,7 @@ Vargen* Neg(Instruction* inst)
 //operateur généraux
 void Set(Vargen* var, Instruction* inst)//operator =
 {
+    inst->compile();
     if(inst->retour.size()==1)
     {
         Vargen* varInst=inst->retour[0];
@@ -669,6 +734,8 @@ Instruction* getMeth(Vargen* var, std::string name, std::string argT,std::string
 Vargen* Cro(Instruction* inst, Instruction* num)
 {
     Vargen* ret=NULL;
+    inst->compile();
+    num->compile();
     if(inst->retour.size()==1 && num->retour.size()==1)
     {
         Vargen* var1=inst->retour[0];
@@ -724,6 +791,7 @@ Vargen* Cro(Instruction* inst, Instruction* num)
 Vargen* Point(Instruction* instVar, string att)
 {
     Vargen* ret=NULL;
+    instVar->compile();
     if(instVar->retour.size()==1)
     {
         Vargen* var=instVar->retour[0];
@@ -743,6 +811,7 @@ Vargen* Point(Instruction* instVar, string att)
 
 void In(std::string stream, Instruction* inst)
 {
+    inst->compile();
     if(stream.compare("cin")==0)
     {
         if(inst->retour.size()==1)
@@ -886,6 +955,7 @@ void In(std::string stream, Instruction* inst)
 
 void Out(std::string stream, Instruction* inst)
 {
+    inst->compile();
     if(inst->retour.size()==1)
     {
         Vargen* var=inst->retour[0];
@@ -999,6 +1069,8 @@ void Decr(Vargen * var) //operator --
 Vargen* Plus(Instruction* inst1, Instruction* inst2)
 {
     Vargen* ret=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
@@ -1148,6 +1220,8 @@ Vargen* Plus(Instruction* inst1, Instruction* inst2)
 Vargen* Moins(Instruction* inst1, Instruction* inst2)
 {
     Vargen* ret=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
@@ -1210,6 +1284,8 @@ Vargen* Moins(Instruction* inst1, Instruction* inst2)
 Vargen* Mult(Instruction* inst1, Instruction* inst2)
 {
     Vargen* ret=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
@@ -1272,6 +1348,8 @@ Vargen* Mult(Instruction* inst1, Instruction* inst2)
 Vargen* Div(Instruction* inst1, Instruction* inst2)
 {
     Vargen* ret=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
@@ -1362,6 +1440,8 @@ Vargen* Div(Instruction* inst1, Instruction* inst2)
 Vargen* Reste(Instruction *inst1, Instruction *inst2)
 {
     Vargen* ret=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
@@ -1398,6 +1478,8 @@ Vargen* Reste(Instruction *inst1, Instruction *inst2)
 void PlusEqual(Instruction* inst1, Instruction* inst2)
 {
     Vargen* var=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1)
     {
         var=inst1->retour[0];
@@ -1409,6 +1491,8 @@ void PlusEqual(Instruction* inst1, Instruction* inst2)
 void MoinsEqual(Instruction* inst1, Instruction* inst2)
 {
     Vargen* var=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1)
     {
         var=inst1->retour[0];
@@ -1420,6 +1504,8 @@ void MoinsEqual(Instruction* inst1, Instruction* inst2)
 void MultEqual(Instruction* inst1, Instruction* inst2)
 {
     Vargen* var=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1)
     {
         var=inst1->retour[0];
@@ -1431,9 +1517,75 @@ void MultEqual(Instruction* inst1, Instruction* inst2)
 void DivEqual(Instruction* inst1, Instruction* inst2)
 {
     Vargen* var=NULL;
+    inst1->compile();
+    inst2->compile();
     if(inst1->retour.size()==1)
     {
         Vargen* var=inst1->retour[0];
     }
     Set2(var,Div(inst1,inst2));
 }
+
+
+void Continue(std::vector<DbVar *> _varDb)
+{
+    Vargen* cont=new Vargen(Continue_,signalType);
+    if(_varDb.size()>0)
+    {
+        int size=_varDb.size();
+        if(size>1)
+        {
+            _varDb[size-2]->erase(Continue_);
+            _varDb[size-2]->insert(cont);
+        }
+        else
+        {
+            Erreur("Continue dans instruction primaire impossible",_varDb);
+        }
+    }
+}
+
+
+void Break(std::vector<DbVar *> _varDb)
+{
+    Vargen* stop=new Vargen(Break_,signalType);
+    if(_varDb.size()>0)
+    {
+        int size=_varDb.size();
+        if(size>1)
+        {
+            _varDb[size-2]->erase(Break_);
+            _varDb[size-2]->insert(stop);
+        }
+        else
+        {
+            Erreur("Break dans instruction primaire impossible",_varDb);
+        }
+    }
+}
+
+
+void Erreur(std::string err, std::vector<DbVar *> _varDb)
+{
+   cout<<"Erreur: "<<err<<endl;
+   Vargen* error=new Vargen(Erreur_,signalType);
+   //error->arg.push_back();
+   if(_varDb.size()>0)
+   {
+       _varDb[0]->erase(Erreur_);
+       _varDb[0]->insert(error);
+   }
+}
+
+
+void Retour(Vargen* ret, std::vector<DbVar *> _varDb)
+{
+    Vargen* retour=new Vargen(Retour_,signalType);
+    retour->arg.push_back(ret);
+    if(_varDb.size()>0)
+    {
+        _varDb[0]->erase(Retour_);
+        _varDb[0]->insert(retour);
+    }
+}
+

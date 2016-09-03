@@ -25,9 +25,18 @@ DbVar::DbVar(DbVar* orig, DbVar* orig2)
 }
 
 
+void DbVar::remove(Vargen *_var)
+{
+
+}
+
+
 void DbVar::insert(Vargen *var)
 {
-    cont.insert(pair<std::string,Vargen*>(var->name,var));
+    if(var!=NULL)
+    {
+        cont.insert(pair<std::string,Vargen*>(var->name,var));
+    }
 }
 
 Vargen* DbVar::find(std::string name, std::string type)

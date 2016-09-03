@@ -10,6 +10,7 @@ string intType="int";
 string charType="char";
 string boolType="bool";
 string floatType="float";
+string signalType="signal";
 
 string listType="list";
 string queueType="queue";
@@ -31,7 +32,7 @@ string newString(string s)
 
 bool isBasic(string s)
 {
-    return (s.compare(intType)==0)||(s.compare(charType)==0)||(s.compare(boolType)==0)||(s.compare(floatType)==0);
+    return (s.compare(intType)==0)||(s.compare(charType)==0)||(s.compare(boolType)==0)||(s.compare(floatType)==0)||(s.compare(signalType)==0);
 }
 
 vector<Attribut*> makeAtt(string contS) //lis les attributs d'une string codée sous la forme "nameAtt1:typeAtt1;nameAtt2:typeAtt2;..."
@@ -95,13 +96,15 @@ vector<Instruction*> makeMeth(string cont)
 
 
 /*
- * Ce constructeur sert à rechercher les type dans la bdd
+ * Ce constructeur sert à rechercher les types dans la bdd
  */
 
 Type::Type(std::string _name, bool estBasic)
 {
     name=_name;
-    if(!estBasic && _name.compare(stringType)!=0)
+    //cout<<"typename="<<name<<endl;
+    //cout<<"isBasic="<<(name.compare(intType)==0)<<endl;
+    if(!estBasic && _name.compare(stringType)!=0 && !isBasic(_name))
     {
         string req="select cont, descr, meth from type where name=\""+_name+"\";";
         string contS="";

@@ -13,6 +13,7 @@ public:
     DbVar(DbVar* orig, DbVar* orig2=NULL);
     void insert(Vargen* _var);
     void erase(std::string name);
+    void remove(Vargen* _var);
     Vargen* find(std::string name, std::string type="");
     std::map<std::string,Vargen*> cont;
     ~DbVar();
