@@ -66,7 +66,7 @@ void Else(Instruction* cond, Instruction* boucle);
 Vargen* identity(std::string cont, std::vector<DbVar*> _varDb);
 Vargen* Return(Instruction* inst);
 void makeInstruction(std::string nameInst, std::vector<Instruction*> _arg, std::vector<DbVar*> _varDb);
-Vargen* NewVar(std::string name, std::string type, std::vector<DbVar*> _varDb, std::string arg="", bool tmp=false);
+Vargen* NewVar(std::string name, std::string type, std::vector<DbVar*> _varDb, std::string arg="", bool tmp=true);
 void deleteVar(std::string name, std::vector<DbVar*> _varDb);
 void NewInst(std::string name,std::string argS, std::string retourS, std::string inst, unsigned int prior=2, std::string _assoc="droite", bool _isOp=false, bool tmp=false);
 void newType(std::string name, std::string desc, std::string cont, std::string meth);

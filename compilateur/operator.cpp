@@ -10,6 +10,8 @@ extern string floatType;
 extern string stringType;
 extern string signalType;
 
+extern vector<DbVar*> context;
+
 string Continue_="Continue";
 string Break_="Break";
 string Erreur_="Erreur";
@@ -18,11 +20,12 @@ string Retour_="Retour";
 
 Vargen* identity(std::string cont, vector<DbVar*> varDb)
 {
-   //case int
    int res;
    int nb;
    Vargen* ret=NULL;
    char* contC=(char*)cont.c_str();
+
+   //case int
    res=sscanf(contC,"%d",&nb);
    sscanf(contC,"%*[^\n]");
    if(res==1)
@@ -78,19 +81,23 @@ Vargen* identity(std::string cont, vector<DbVar*> varDb)
       return ret;
    }
 
+
    //case string
-   char* contStr;
-   res=sscanf(contC,"\"%s\"",contStr);
-   sscanf(contC,"%*[^\n]");
-   if(res==1)
+   if(cont.size()>3)
    {
-      ret=new Vargen(cont,stringType,cont);
-      int size=varDb.size();
-      if(size>1)
-      {
-          varDb[size-2]->insert(ret);
-      }
-      return ret;
+       int size=cont.size();
+       if(cont[0]=='"' && cont[size-1]=='"')
+       {
+           int size=cont.size();
+           string s=cont.substr(1,size-2);
+           ret=new Vargen(s,stringType,s);
+           int sizeTmp=varDb.size();
+           if(sizeTmp>1)
+           {
+               varDb[sizeTmp-2]->insert(ret);
+           }
+           return ret;
+       }
    }
 
    //case Vargen
@@ -140,6 +147,7 @@ Vargen* NewVar(std::string name, std::string type, vector<DbVar*> _varDb, std::s
     }
     if(ret==NULL)
     {
+        //cout<<"tmp="<<boolalpha<<tmp<<endl;
         ret=new Vargen(name,type,arg,tmp);
         int size=_varDb.size();
         if(size>1)
@@ -226,17 +234,18 @@ Vargen* And(Instruction* inst1, Instruction* inst2)// operator &&
     inst1->compile();
     inst2->compile();
     Vargen* ret=NULL;
+    vector<DbVar*> varDb=inst1->varDb;
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
         Vargen* var2=inst2->retour[0];
         if(var1==NULL)
         {
-            cout<<"Erreur: var1 est NULL"<<endl;
+            Erreur("var1 est NULL dans and",varDb);
         }
         else if(var2==NULL)
         {
-            cout<<"Erreur: var2 est NULL"<<endl;
+            Erreur("var2 est NULL dans and",varDb);
         }
         else if(var1->type->name.compare(boolType)==0 && var2->type->name.compare(boolType)==0)
         {
@@ -246,16 +255,16 @@ Vargen* And(Instruction* inst1, Instruction* inst2)// operator &&
         }
         else if(var1->type->name.compare(boolType)!=0)
         {
-            cout<<"Operande gauche de && n'est pas de type bool"<<endl;
+            Erreur("Operande gauche de && n'est pas de type bool",varDb);
         }
         else
         {
-            cout<<"Operande droite de && n'est pas de type bool"<<endl;
+            Erreur("Operande droite de && n'est pas de type bool",varDb);
         }
     }
     else
     {
-        cout<<"Erreur dans l'operateur &&"<<endl;
+        Erreur("Erreur dans l'operateur &&",varDb);
     }
     delete inst1;
     delete inst2;
@@ -267,6 +276,7 @@ Vargen* Or(Instruction* inst1, Instruction* inst2)// operator ||
 {
     inst1->compile();
     inst2->compile();
+    vector<DbVar*> varDb=inst1->varDb;
     Vargen* ret=NULL;
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
@@ -274,11 +284,11 @@ Vargen* Or(Instruction* inst1, Instruction* inst2)// operator ||
         Vargen* var2=inst2->retour[0];
         if(var1==NULL)
         {
-            cout<<"Erreur: var1 est NULL"<<endl;
+            Erreur("var1 est NULL",varDb);
         }
         else if(var2==NULL)
         {
-            cout<<"Erreur: var2 est NULL"<<endl;
+            Erreur("var2 est NULL",varDb);
         }
         else if(var1->type->name.compare(boolType)==0 && var2->type->name.compare(boolType)==0)
         {
@@ -288,16 +298,16 @@ Vargen* Or(Instruction* inst1, Instruction* inst2)// operator ||
         }
         else if(var1->type->name.compare(boolType)!=0)
         {
-            cout<<"Operande gauche de || n'est pas de type bool"<<endl;
+            Erreur("Operande gauche de || n'est pas de type bool",varDb);
         }
         else
         {
-            cout<<"Operande droite de || n'est pas de type bool"<<endl;
+            Erreur("Operande droite de || n'est pas de type bool",varDb);
         }
     }
     else
     {
-        cout<<"Erreur dans l'operateur ||"<<endl;
+        Erreur("Erreur dans l'operateur ||",varDb);
     }
     delete inst1;
     delete inst2;
@@ -310,11 +320,11 @@ bool Equal2(Vargen* var1, Vargen* var2)
     bool ret=true;
     if(var1==NULL)
     {
-        cout<<"Erreur: var1 est NULL"<<endl;
+        Erreur("var1 est NULL",context);
     }
     else if(var2==NULL)
     {
-        cout<<"Erreur: var2 est NULL"<<endl;
+        Erreur("var2 est NULL",context);
     }
     else if(var1->type->name.compare(var2->type->name)==0)
     {
@@ -337,36 +347,31 @@ bool Equal2(Vargen* var1, Vargen* var2)
                 ret=false;
             }
         }
-        else if(var1->arg.size()==0 && var2->arg.size()==0)
+        else if(var1->type->name.compare(intType)==0)
         {
-            if(var1->type->name.compare(intType))
-            {
-                ret=(var1->valInt==var2->valInt);
-            }
-            else if(var1->type->name.compare(floatType))
-            {
-                ret=(var1->valFloat==var2->valFloat);
-            }
-            else if(var1->type->name.compare(charType))
-            {
-                ret=(var1->valChar==var2->valChar);
-            }
-            else if(var1->type->name.compare(boolType))
-            {
-                ret=(var1->valBool==var2->valBool);
-            }
-            else if(var1->type->name.compare(stringType))
-            {
-                ret=(var1->valStr.compare(var2->valStr)==0);
-            }
+            ret=(var1->valInt==var2->valInt);
         }
-        else
+        else if(var1->type->name.compare(floatType)==0)
         {
-            ret=false;
+            ret=(var1->valFloat==var2->valFloat);
         }
+        else if(var1->type->name.compare(charType)==0)
+        {
+            ret=(var1->valChar==var2->valChar);
+        }
+        else if(var1->type->name.compare(boolType)==0)
+        {
+            ret=(var1->valBool==var2->valBool);
+        }
+        else if(var1->type->name.compare(stringType)==0)
+        {
+            ret=(var1->valStr.compare(var2->valStr)==0);
+        }
+
     }
     else
     {
+        //cout<<"le type des deux variables est différent"<<endl;
         ret=false;
     }
     return ret;
@@ -384,11 +389,11 @@ Vargen* Equal(Instruction* inst1, Instruction* inst2)//operator ==
         Vargen* var2=inst2->retour[0];
         if(var1==NULL)
         {
-            cout<<"Erreur: var1 est NULL"<<endl;
+            Erreur("var1 est NULL",context);
         }
         else if(var2==NULL)
         {
-            cout<<"Erreur: var2 est NULL"<<endl;
+            Erreur("var2 est NULL",context);
         }
         else
         {
@@ -414,11 +419,11 @@ Vargen* Diff(Instruction* inst1, Instruction* inst2)//operator !=
         Vargen* var2=inst2->retour[0];
         if(var1==NULL)
         {
-            cout<<"Erreur: var1 est NULL"<<endl;
+            Erreur("var1 est NULL",context);
         }
         else if(var2==NULL)
         {
-            cout<<"Erreur: var2 est NULL"<<endl;
+            Erreur("var2 est NULL",context);
         }
         else
         {
@@ -446,11 +451,11 @@ Vargen* SupEqual(Instruction* inst1, Instruction* inst2)
         bool res;
         if(var1==NULL)
         {
-           cout<<"Erreur: var est NULL"<<endl;
+           Erreur("var1 est NULL",context);
         }
         else if(var2==NULL)
         {
-           cout<<"Erreur: var est NULL"<<endl;
+           Erreur("var2 est NULL",context);
         }
         else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(intType)==0)
         {
@@ -496,11 +501,11 @@ Vargen* Sup(Instruction* inst1, Instruction* inst2)
         bool res;
         if(var1==NULL)
         {
-            cout<<"Erreur: var1 est NULL"<<endl;
+            Erreur("var1 est NULL",context);
         }
         else if(var2==NULL)
         {
-            cout<<"Erreur: var2 est NULL"<<endl;
+            Erreur("var2 est NULL",context);
         }
         else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(intType)==0)
         {
@@ -546,11 +551,11 @@ Vargen* InfEqual(Instruction* inst1, Instruction* inst2)
         bool res;
         if(var1==NULL)
         {
-            cout<<"Erreur: var1 est NULL"<<endl;
+            Erreur("var1 est NULL",context);
         }
         else if(var2==NULL)
         {
-            cout<<"Erreur: var est NULL"<<endl;
+            Erreur("var2 est NULL",context);
         }
         else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(intType)==0)
         {
@@ -596,11 +601,11 @@ Vargen* Inf(Instruction* inst1, Instruction* inst2)
         bool res;
         if(var1==NULL)
         {
-            cout<<"Erreur: var1 est NULL"<<endl;
+            Erreur("var1 est NULL",context);
         }
         else if(var2==NULL)
         {
-            cout<<"Erreur: var2 est NULL"<<endl;
+            Erreur("var1 est NULL",context);
         }
         else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(intType)==0)
         {
@@ -643,7 +648,7 @@ Vargen* Neg(Instruction* inst)
         Vargen* var=inst->retour[0];
         if(var==NULL)
         {
-            cout<<"Erreur: var est NULL"<<endl;
+            Erreur("var est NULL",context);
         }
         else if(var->type->name.compare(boolType)==0)
         {
@@ -666,11 +671,11 @@ void Set(Vargen* var, Instruction* inst)//operator =
         Vargen* varInst=inst->retour[0];
         if(var==NULL)
         {
-            cout<<"Erreur: var est NULL"<<endl;
+            Erreur("var1 est NULL",context);
         }
         else if(varInst==NULL)
         {
-            cout<<"Erreur: var2 est NULL"<<endl;
+            Erreur("va2 est NULL",context);
         }
         else
         {
@@ -688,11 +693,11 @@ void Set2(Vargen* var1, Vargen* var2)
     }
     else if(var1==NULL)
     {
-       cout<<"Erreur: var1 est NULL"<<endl;
+       Erreur("var1 est NULL",context);
     }
     else
     {
-       cout<<"Erreur: var2 est NULL"<<endl;
+        Erreur("var2 est NULL",context);
     }
 }
 
@@ -705,7 +710,7 @@ Vargen* getAtt(Instruction* instVar, std::string att) //operator ->
         Vargen* var=instVar->retour[0];
         if(var==NULL)
         {
-            cout<<"Erreur: var est NULL"<<endl;
+            Erreur("var est NULL",context);
         }
         else
         {
@@ -721,7 +726,7 @@ Instruction* getMeth(Vargen* var, std::string name, std::string argT,std::string
 {
     if(var==NULL)
     {
-        cout<<"Erreur: var est NULL"<<endl;
+        Erreur("var1 est NULL",context);
     }
     else
     {
@@ -742,11 +747,11 @@ Vargen* Cro(Instruction* inst, Instruction* num)
         Vargen* var2=num->retour[0];
         if(var1==NULL)
         {
-            cout<<"Erreur: var1 est NULL"<<endl;
+            Erreur("var1 est NULL",context);
         }
         else if(var2==NULL)
         {
-            cout<<"Erreur: var2 est NULL"<<endl;
+            Erreur("var2 est NULL",context);
         }
         else if(var2->type->name.compare(intType)==0)
         {
@@ -768,7 +773,7 @@ Vargen* Cro(Instruction* inst, Instruction* num)
                 }
                 else
                 {
-                    cout<<"Erreur depassement de taille de la string (k="<<k<<", string='"<<var1->valStr<<"'"<<endl;
+                    Erreur("depassement de taille de la string='"+var1->valStr+"'",context);
                 }
             }
             else if(var1->type->isContainer())
@@ -779,7 +784,7 @@ Vargen* Cro(Instruction* inst, Instruction* num)
                 }
                 else
                 {
-                    cout<<"Erreur depassement de taille du container"<<endl;
+                    Erreur("depassement de taille du container",context);
                 }
             }
         }
@@ -797,7 +802,7 @@ Vargen* Point(Instruction* instVar, string att)
         Vargen* var=instVar->retour[0];
         if(var==NULL)
         {
-            cout<<"Erreur: var est NULL"<<endl;
+            Erreur("var1 est NULL",context);
         }
         else
         {
@@ -819,7 +824,7 @@ void In(std::string stream, Instruction* inst)
             Vargen* var=inst->retour[0];
             if(var==NULL)
             {
-                cout<<"Erreur: var est NULL"<<endl;
+                Erreur("var1 est NULL",context);
             }
             else
             {
@@ -886,7 +891,7 @@ void In(std::string stream, Instruction* inst)
                 Vargen* var=inst->retour[0];
                 if(var==NULL)
                 {
-                    cout<<"Erreur: var est NULL"<<endl;
+                    Erreur("var1 est NULL",context);
                 }
                 else
                 {
@@ -946,7 +951,7 @@ void In(std::string stream, Instruction* inst)
         }
         else
         {
-            cout<<"Erreur lors de l'ouverture du fichier "<<stream<<endl;
+            Erreur("Erreur lors de l'ouverture du fichier "+stream,context);
         }
     }
     delete inst;
@@ -961,7 +966,7 @@ void Out(std::string stream, Instruction* inst)
         Vargen* var=inst->retour[0];
         if(var==NULL)
         {
-            cout<<"Erreur: var est NULL"<<endl;
+            Erreur("var2 est NULL",context);
         }
         else
         {
@@ -1023,7 +1028,7 @@ void Out(std::string stream, Instruction* inst)
                 }
                 else
                 {
-                    cout<<"Erreur lors de l'ouverture du fichier "<<stream<<endl;
+                    Erreur("Erreur lors de l'ouverture du fichier "+stream,context);
                 }
             }
         }
@@ -1036,7 +1041,7 @@ void Incr(Vargen* var) //operator ++
 {
     if(var==NULL)
     {
-        cout<<"Erreur: var est NULL"<<endl;
+        Erreur("var est NULL",context);
     }
     else if(var->type->name.compare(intType)==0)
     {
@@ -1044,7 +1049,7 @@ void Incr(Vargen* var) //operator ++
     }
     else
     {
-        cout<<"Erreur pas d'opérateur ++ pour les variables de type "<<var->type->name<<endl;
+        Erreur("pas d'opérateur ++ pour les variables de type "+var->type->name,context);
     }
 }
 
@@ -1053,7 +1058,7 @@ void Decr(Vargen * var) //operator --
 {
     if(var==NULL)
     {
-        cout<<"Erreur: var est NULL"<<endl;
+        Erreur("var est NULL",context);
     }
     else if(var->type->name.compare(intType)==0)
     {
@@ -1061,7 +1066,7 @@ void Decr(Vargen * var) //operator --
     }
     else
     {
-        cout<<"Erreur pas d'opérateur ++ pour les variables de type "<<var->type->name<<endl;
+        Erreur("pas d'opérateur -- pour les variables de type "+var->type->name,context);
     }
 }
 
@@ -1071,17 +1076,18 @@ Vargen* Plus(Instruction* inst1, Instruction* inst2)
     Vargen* ret=NULL;
     inst1->compile();
     inst2->compile();
+
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
-        Vargen* var2=inst2->retour[0];
+        Vargen* var2=inst2->retour[0];        
         if(var1==NULL)
         {
-           cout<<"Erreur var1 est NULL"<<endl;
+           Erreur("var1 est NULL",context);
         }
         else if(var2==NULL)
         {
-           cout<<"Erreur var2 est NULL"<<endl;
+           Erreur("var2 est NULL",context);
         }
         else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(intType)==0)
         {
@@ -1134,7 +1140,7 @@ Vargen* Plus(Instruction* inst1, Instruction* inst2)
         else if(var1->type->name.compare(stringType)==0 && var2->type->name.compare(charType)==0)
         {
             string s=var2->valStr;
-            s+=var2->valChar;
+            s+=var2->valChar;            
             string name="plus_"+var1->name+"_"+var2->name;
             ret=new Vargen(name,stringType,s);
         }
@@ -1208,7 +1214,7 @@ Vargen* Plus(Instruction* inst1, Instruction* inst2)
         }
         else
         {
-            cout<<"Erreur, aucun opérateur +("<<var1->type->name<<","<<var2->type->name<<")"<<endl;
+            Erreur("aucun opérateur +("+var1->type->name+","+var2->type->name+")",context);
         }
     }
     delete inst1;
@@ -1228,11 +1234,11 @@ Vargen* Moins(Instruction* inst1, Instruction* inst2)
         Vargen* var2=inst2->retour[0];
         if(var1==NULL)
         {
-           cout<<"Erreur var1 est NULL"<<endl;
+           Erreur("var1 est NULL",context);
         }
         else if(var2==NULL)
         {
-           cout<<"Erreur var2 est NULL"<<endl;
+           Erreur("var2 est NULL",context);
         }
         else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(intType)==0)
         {
@@ -1272,7 +1278,7 @@ Vargen* Moins(Instruction* inst1, Instruction* inst2)
         }
         else
         {
-            cout<<"Erreur, aucun opérateur -("<<var1->type->name<<","<<var2->type->name<<")"<<endl;
+            Erreur("aucun opérateur -("+var1->type->name+","+var2->type->name+")",context);
         }
     }
     delete inst1;
@@ -1289,17 +1295,17 @@ Vargen* Mult(Instruction* inst1, Instruction* inst2)
     if(inst1->retour.size()==1 && inst2->retour.size()==1)
     {
         Vargen* var1=inst1->retour[0];
-        Vargen* var2=inst2->retour[0];
+        Vargen* var2=inst2->retour[0];        
         if(var1==NULL)
         {
-           cout<<"Erreur var1 est NULL"<<endl;
+           Erreur("var1 est NULL",context);
         }
         else if(var2==NULL)
         {
-           cout<<"Erreur var2 est NULL"<<endl;
+           Erreur("var2 est NULL",context);
         }
         else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(intType)==0)
-        {
+        {            
             int val=var1->valInt*var2->valInt;
             char valStr[4];
             sprintf(valStr,"%d",val);
@@ -1336,7 +1342,7 @@ Vargen* Mult(Instruction* inst1, Instruction* inst2)
         }
         else
         {
-            cout<<"Erreur, aucun opérateur *("<<var1->type->name<<","<<var2->type->name<<")"<<endl;
+            Erreur("aucun opérateur *("+var1->type->name+","+var2->type->name+")",context);
         }
     }
     delete inst1;
@@ -1356,17 +1362,17 @@ Vargen* Div(Instruction* inst1, Instruction* inst2)
         Vargen* var2=inst2->retour[0];
         if(var1==NULL)
         {
-           cout<<"Erreur var1 est NULL"<<endl;
+           Erreur("var1 est NULL",context);
         }
         else if(var2==NULL)
         {
-           cout<<"Erreur var2 est NULL"<<endl;
+           Erreur("var2 est NULL",context);
         }
         else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(intType)==0)
         {
             if(var2->valInt==0)
             {
-                cout<<"Erreur: division par zéro!"<<endl;
+                Erreur("division par zéro!",context);
             }
             else
             {
@@ -1382,7 +1388,7 @@ Vargen* Div(Instruction* inst1, Instruction* inst2)
         {
             if(var2->valInt==0)
             {
-                cout<<"Erreur: division par zéro!"<<endl;
+                Erreur("division par zéro!",context);
             }
             else
             {
@@ -1398,7 +1404,7 @@ Vargen* Div(Instruction* inst1, Instruction* inst2)
         {
             if(var2->valFloat==0)
             {
-                cout<<"Erreur: division par zéro!"<<endl;
+                Erreur("division par zéro!",context);
             }
             else
             {
@@ -1414,7 +1420,7 @@ Vargen* Div(Instruction* inst1, Instruction* inst2)
         {
             if(var2->valFloat==0)
             {
-                cout<<"Erreur: division par zéro!"<<endl;
+                Erreur("division par zéro!",context);
             }
             else
             {
@@ -1428,7 +1434,7 @@ Vargen* Div(Instruction* inst1, Instruction* inst2)
         }
         else
         {
-            cout<<"Erreur, aucun opérateur ∕("<<var1->type->name<<","<<var2->type->name<<")"<<endl;
+            Erreur("aucun opérateur ∕("+var1->type->name+","+var2->type->name+")",context);
         }
     }
     delete inst1;
@@ -1448,17 +1454,17 @@ Vargen* Reste(Instruction *inst1, Instruction *inst2)
         Vargen* var2=inst2->retour[0];
         if(var1==NULL)
         {
-           cout<<"Erreur var1 est NULL"<<endl;
+           Erreur("var1 est NULL",context);
         }
         else if(var2==NULL)
         {
-           cout<<"Erreur var2 est NULL"<<endl;
+           Erreur("var1 est NULL",context);
         }
         else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(intType)==0)
         {
             if(var2->valInt==0)
             {
-                cout<<"Erreur: division par zéro!"<<endl;
+                Erreur("division par zéro!",context);
             }
             else
             {

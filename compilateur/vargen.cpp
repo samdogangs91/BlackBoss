@@ -11,6 +11,8 @@ extern string floatType;
 extern string stringType;
 extern string signalType;
 
+extern vector<DbVar*> context;
+
 
 bool isContainer(string name)
 {
@@ -316,11 +318,11 @@ Vargen::Vargen(Vargen *var)
         else if(_type.compare(boolType)==0)
         {
             valBool=var->valBool;
-        }
-        else if(_type.compare(stringType)==0)
-        {
-            valStr=var->valStr;
-        }
+        }        
+    }
+    else if(type->name.compare(stringType)==0)
+    {
+        valStr=var->valStr;
     }
     else
     {
@@ -344,7 +346,7 @@ string insertIntoList(string _arg)
     sprintf(sizeTmp,"%d",_arg.size());
     string req1="insert into list_char(cont,size) values(\""+_arg+"\","+sizeTmp+");";
     memory->insert(req1);
-    string req2="select list_char_id,cont from list_char where list_char_id in (select max(list_char_id) in list_char);";
+    string req2="select list_char_id,cont from list_char where list_char_id in (select max(list_char_id) from list_char);";
     MYSQL_RES* res=memory->request(req2);
     if(res!=NULL)
     {
@@ -611,7 +613,7 @@ Vargen::Vargen(string _name, string _type, string _arg, bool _tmp)
                                 }
                                 else
                                 {
-                                   cout<<"erreur: la variable "+_name+" n'existe pas dans la table "+_type<<endl;
+                                   Erreur("la variable "+_name+" n'existe pas dans la table "+_type,context);
                                 }
                             }
                             else
@@ -637,7 +639,7 @@ Vargen::Vargen(string _name, string _type, string _arg, bool _tmp)
                                 }
                                 else
                                 {
-                                    cout<<"erreur: la variable "+_name+" n'existe pas dans la table "+_type<<endl;
+                                    Erreur("la variable "+_name+" n'existe pas dans la table "+_type,context);
                                 }
                             }
                             else
@@ -710,7 +712,7 @@ void Vargen::setValue(string val)
                     }
                     else
                     {
-                        cout<<"Erreur la variable "<<val<<" n'existe pas dans la table "<<type->name<<endl;
+                        Erreur("la variable "+val+" n'existe pas dans la table "+type->name,context);
                     }
                 }
                 else
@@ -732,7 +734,7 @@ void Vargen::setValue(string val)
                 }
                 else
                 {
-                    cout<<"Erreur de lecture de l'attribut "<<crtAtt->name<<" de la variable "<<val<<endl;
+                    Erreur("Erreur de lecture de l'attribut "+crtAtt->name+" de la variable "+val,context);
                 }
             }
 
@@ -775,6 +777,12 @@ void Vargen::deleteVar()
             string req="delete from "+type->name+" where "+type->cont[0]->name+"="+name+";";
             memory->insert(req);
         }
+        else if(type->name.compare(stringType)==0)
+        {
+            string id=getIdString(valStr);
+            string req="delete from list_char where list_char_id="+id+";";
+            memory->insert(req);
+        }
     }
     //~Vargen();
 }
@@ -790,7 +798,7 @@ void Vargen::setVal(Vargen *val)
         }
         else
         {
-            cout<<"Erreur: Aucun opérateur entre "<<type->name<<" et "<<val->type->name<<endl;
+            Erreur("Aucun opérateur = entre "+type->name+" et "+val->type->name,context);
         }
     }
     else if(type->name.compare(floatType)==0)
@@ -805,7 +813,7 @@ void Vargen::setVal(Vargen *val)
         }
         else
         {
-            cout<<"Erreur: Aucun opérateur entre "<<type->name<<" et "<<val->type->name<<endl;
+            Erreur("Aucun opérateur = entre "+type->name+" et "+val->type->name,context);
         }
     }
     else if(type->name.compare(charType)==0)
@@ -816,7 +824,7 @@ void Vargen::setVal(Vargen *val)
         }
         else
         {
-            cout<<"Erreur: Aucun opérateur entre "<<type->name<<" et "<<val->type->name<<endl;
+            Erreur("Aucun opérateur = entre "+type->name+" et "+val->type->name,context);
         }
     }
     else if(type->name.compare(boolType)==0)
@@ -827,7 +835,7 @@ void Vargen::setVal(Vargen *val)
         }
         else
         {
-            cout<<"Erreur: Aucun opérateur entre "<<type->name<<" et "<<val->type->name<<endl;
+            Erreur("Aucun opérateur = entre "+type->name+" et "+val->type->name,context);
         }
     }
     else if(type->name.compare(stringType)==0)
@@ -854,7 +862,7 @@ void Vargen::setVal(Vargen *val)
         }
         else
         {
-            cout<<"Erreur: Aucun opérateur entre "<<type->name<<" et "<<val->type->name<<endl;
+            Erreur("Aucun opérateur = entre "+type->name+" et "+val->type->name,context);
         }
     }
     else if(type->name.compare(val->type->name)==0)
@@ -870,7 +878,7 @@ void Vargen::setVal(Vargen *val)
     }
     else
     {
-        cout<<"Erreur: Aucun opérateur entre "<<type->name<<" et "<<val->type->name<<endl;
+        Erreur("Aucun opérateur = entre "+type->name+" et "+val->type->name,context);
     }
 }
 

@@ -16,6 +16,8 @@ string listType="list";
 string queueType="queue";
 string stackType="stack";
 
+extern vector<DbVar*> context;
+
 string newString(string s)
 {
     string ret="";

@@ -70,5 +70,14 @@ void DbVar::erase(string name)
 
 DbVar::~DbVar()
 {
-    cont.clear();
+    map<string,Vargen*>::iterator it;
+    for(it=cont.begin();it!=cont.end();it++)
+    {
+        Vargen* var=it->second;
+        if(var->tmp)
+        {
+            var->deleteVar();
+        }
+        cont.erase(it);
+    }
 }
