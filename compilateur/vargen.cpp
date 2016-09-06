@@ -383,7 +383,6 @@ string insertIntoList(string _arg)
  * arg="val" ssi la variable est basique ou si son type est string
  * isNew n'est pas encore utilisé
  */
-
 Vargen::Vargen(string _name, string _type, string _arg, bool _tmp)
 {
     name=_name;
@@ -522,9 +521,12 @@ Vargen::Vargen(string _name, string _type, string _arg, bool _tmp)
                     delete type;
                     type=new Type(_type,true);
                     char* valTmp=(char*)val.c_str();
-                    int res=sscanf(valTmp,"%c",&valChar);
+                    char c='\0';
+                    int res=sscanf(valTmp,"%c",&c);
+                    valChar=c;
                     sscanf(valTmp,"%*[\n]");
                     ok=(res==1);
+                    //cout<<"valChar="<<valChar<<endl;
                     if(!ok)
                     {
                         valChar='\0';

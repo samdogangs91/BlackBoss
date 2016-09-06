@@ -63,9 +63,9 @@ void For(Instruction* deb, Instruction* stop, Instruction* incr,Instruction* bou
 void While(Instruction* cond, Instruction* boucle);
 void If(Instruction* cond, Instruction* boucle);
 void Else(Instruction* cond, Instruction* boucle);
-Vargen* identity(std::string cont, std::vector<DbVar*> _varDb);
+Vargen* identity(std::string cont, std::vector<Vargen*> arg, std::vector<DbVar*> _varDb);
 Vargen* Return(Instruction* inst);
-void makeInstruction(std::string nameInst, std::vector<Instruction*> _arg, std::vector<DbVar*> _varDb);
+std::vector<Vargen*> makeInstruction(std::string nameInst, std::vector<Vargen*> _arg, std::vector<Vargen*> exArg, std::vector<DbVar*> _varDb, Vargen* var=NULL);
 Vargen* NewVar(std::string name, std::string type, std::vector<DbVar*> _varDb, std::string arg="", bool tmp=true);
 void deleteVar(std::string name, std::vector<DbVar*> _varDb);
 void NewInst(std::string name,std::string argS, std::string retourS, std::string inst, unsigned int prior=2, std::string _assoc="droite", bool _isOp=false, bool tmp=false);
@@ -119,7 +119,7 @@ void Retour(Vargen* ret, std::vector<DbVar *> _varDb);
 
 
 
-int indexInString(std::string name, std::string s, std::vector<int> index, unsigned int nbAtten=1);
+int indexInString(std::string name, std::string s, std::vector<int> index, bool isRight, unsigned int nbAtten=1);
 std::vector<Instruction*> findInstruction(std::string name);
 std::string getStringId(std::string id);
 std::string getIdString(std::string cont);

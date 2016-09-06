@@ -10,6 +10,7 @@
 
 using namespace std;
 
+string Arg_="Arg";
 string If_="If";
 string Set_="Set";
 string For_="For";
@@ -212,28 +213,61 @@ bool isIntab(int i,vector<int> tab)
 /*
  * return l'indice du name dans la string
  */
-int indexInString(string name, string s, vector<int> index, unsigned int nbAtten)
+int indexInString(string name, string s, vector<int> index, bool isRight, unsigned int nbAtten)
 {
     unsigned int i=0;
     //cout<<"tab size: "<<index.size()<<endl;
     unsigned int nbVu=0;
     bool isInBra_=false;
     bool isInQuo_=false;
+    int numPar=0;
     if(name.size()>1)
     {
         for(i=0;i<s.size()-1;i++)
         {
            unsigned int nbCom=0;
            unsigned int l;
-           if(s[i]=='"')
+           if(s[i]=='"' && !isInQuo_)
            {
-               isInQuo_=!isInQuo_;
+               if(i>0)
+               {
+                   if(s[i-1]!='\\')
+                   {
+                      isInBra_=!isInBra_;
+                   }
+               }
+               else
+               {
+                   isInBra_=!isInBra_;
+               }
            }
-           if(s[i]=='\'')
+           if(s[i]=='\'' && !isInBra_)
            {
-               isInBra_=!isInBra_;
+               if(i>0)
+               {
+                   if(s[i-1]!='\\')
+                   {
+                      isInQuo_=!isInQuo_;
+                   }
+               }
+               else
+               {
+                   isInQuo_=!isInQuo_;
+               }
            }
            if(isInQuo_||isInBra_)
+           {
+               continue;
+           }
+           if(s[i]=='(')
+           {
+               numPar++;
+           }
+           if(s[i]==')')
+           {
+               numPar--;
+           }
+           if(isRight && (numPar>0))
            {
                continue;
            }
@@ -268,15 +302,47 @@ int indexInString(string name, string s, vector<int> index, unsigned int nbAtten
         char op=name[0];
         for(i=0;i<s.size();i++)
         {
-            if(s[i]=='"')
+            if(s[i]=='"' && !isInQuo_)
             {
-                isInQuo_=!isInQuo_;
+                if(i>0)
+                {
+                    if(s[i-1]!='\\')
+                    {
+                       isInBra_=!isInBra_;
+                    }
+                }
+                else
+                {
+                    isInBra_=!isInBra_;
+                }
             }
-            if(s[i]=='\'')
+            if(s[i]=='\'' && !isInBra_)
             {
-                isInBra_=!isInBra_;
+                if(i>0)
+                {
+                    if(s[i-1]!='\\')
+                    {
+                       isInQuo_=!isInQuo_;
+                    }
+                }
+                else
+                {
+                    isInQuo_=!isInQuo_;
+                }
             }
             if(isInQuo_||isInBra_)
+            {
+                continue;
+            }
+            if(s[i]=='(')
+            {
+                numPar++;
+            }
+            if(s[i]==')')
+            {
+                numPar--;
+            }
+            if(isRight && (numPar>0))
             {
                 continue;
             }
@@ -541,6 +607,7 @@ string parenth(string s)
                 bool isInst2=false;
                 bool isEqual=false;
                 bool isLeft=false;
+                bool isRight=true;
                 bool isOp=false;
                 bool sameName=false;
                 if(inst[k]->prior> inst[k+1]->prior)
@@ -569,7 +636,7 @@ string parenth(string s)
                         isOp=inst[k]->isOp;
                         inst.erase(inst.begin());
                         //cout<<"isEqual, assoc droite et name="<<name<<endl;
-                        //isRight=true;
+                        isRight=true;
                     }
                 }
                 else if(inst[k]->prior < inst[k+1]->prior)
@@ -587,11 +654,11 @@ string parenth(string s)
                        unsigned int i;
                        if(sameName)
                        {
-                           i=indexInString(name,s,tab,2);
+                           i=indexInString(name,s,tab,isRight,2);
                        }
                        else
                        {
-                           i=indexInString(name,s,tab);
+                           i=indexInString(name,s,tab,isRight);
                        }
                        tab.push_back(i+1);
                        int j;
@@ -643,11 +710,11 @@ string parenth(string s)
                        unsigned int i;
                        if(sameName)
                        {
-                           i=indexInString(name,s,tab,2);
+                           i=indexInString(name,s,tab,isRight,2);
                        }
                        else
                        {
-                           i=indexInString(name,s,tab);
+                           i=indexInString(name,s,tab,isRight);
                        }
                        tab.push_back(i+1);
                        unsigned int l;
@@ -733,11 +800,11 @@ string parenth(string s)
                        unsigned int i;
                        if(sameName)
                        {
-                           i=indexInString("[",s,tab,2);
+                           i=indexInString("[",s,tab,isRight,2);
                        }
                        else
                        {
-                           i=indexInString("[",s,tab);
+                           i=indexInString("[",s,tab,isRight);
                        }
                        tab.push_back(i+1);
                        int j;
@@ -819,11 +886,11 @@ string parenth(string s)
                        unsigned int i;
                        if(sameName)
                        {
-                           i=indexInString(name,s,tab,2);
+                           i=indexInString(name,s,tab,isRight,2);
                        }
                        else
                        {
-                           i=indexInString(name,s,tab);
+                           i=indexInString(name,s,tab,isRight);
                        }
                         tab.push_back(i+1);
                         //int size=tab.size();
@@ -910,7 +977,7 @@ string parenth(string s)
                                 if(s[m]=='\'' && !isInBra)
                                 {
                                    isInQuo=!isInQuo;
-                                   if(!isInQuo)
+                                   if(!isInQuo) //si on est pas dans une quote
                                    {
                                        continue;
                                    }
@@ -943,7 +1010,6 @@ string parenth(string s)
                                 }
                                 if(!isNotSpe(s[m]) && numPar2==0 && nbCro==0 && m!=i+1 && !isInQuo && !isInBra) //si le caractère ne peut pas être dans une variable
                                 {
-
                                     break;
                                 }
                             }
@@ -976,11 +1042,11 @@ string parenth(string s)
                     unsigned int i;
                     if(sameName)
                     {
-                        i=indexInString(name,s,tab,2);
+                        i=indexInString(name,s,tab,isRight,2);
                     }
                     else
                     {
-                        i=indexInString(name,s,tab);
+                        i=indexInString(name,s,tab,isRight);
                     }
                     unsigned int j=0;
                     if(i>0)
@@ -1399,6 +1465,13 @@ void Instruction::preCompile(string inst)
     if(cont.size()==1)
     {
         type="";
+        if(cont[0].size()>1 && type.compare("")==0)
+        {
+            if(cont[0][0]=='?')
+             {
+                type=Arg_;
+             }
+        }
         if(cont[0].size()>2 && type.compare("")==0)
         {
            if(cont[0][0]=='I'&& cont[0][1]=='f' )
@@ -1412,6 +1485,10 @@ void Instruction::preCompile(string inst)
             if(cont[0][0]=='F'&& cont[0][1]=='o' && cont[0][2]=='r')
             {
                 type=For_;
+            }
+            else if(cont[0][0]=='A'&& cont[0][1]=='r' && cont[0][2]=='g')
+            {
+                type=Arg_;
             }
 
         }
@@ -1503,6 +1580,7 @@ void Instruction::preCompile(string inst)
             if(!isWellPar(crt))
             {
                 crt=parenth(crt);
+                //crt=uselessPar(crt);
             }
             else
             {
@@ -1606,11 +1684,11 @@ void Instruction::preCompile(string inst)
                         }
                         else if(s[k]=='<' && s[k+1]=='<')
                         {
-                            actualFun=In_;
+                            actualFun=Out_;
                         }
                         else if(s[k]=='>' && s[k+1]=='>')
                         {
-                            actualFun=Out_;
+                            actualFun=In_;
                         }
                     }
                     if(k<s.size() && actualFun.compare("")==0)
@@ -1730,6 +1808,8 @@ Instruction::Instruction(string _name, string _cont, vector<DbVar*> _var)
     isOp=false;
     varDb=_var;
     varDb.push_back(new DbVar());
+    Vargen* newL=new Vargen("endl",stringType,"endl");
+    varDb.back()->insert(newL);
     context=varDb;
     ok=true;
     //cout<<"contenu inst="<<brut<<endl;
@@ -2131,7 +2211,7 @@ vector<string> getArg(string s, char sep, unsigned int numPar_)
     for(k=0;k<s.size();k++)
     {
         //cout<<"numPar="<<numPar<<endl;
-        if(s[k]=='"')
+        if(s[k]=='"' && !isInQuo)
         {
             if(k>0)
             {
@@ -2145,7 +2225,7 @@ vector<string> getArg(string s, char sep, unsigned int numPar_)
                 isInBra=!isInBra;
             }
         }
-        if(s[k]=='\'')
+        if(s[k]=='\'' && !isInBra)
         {
             if(k>0)
             {
@@ -2418,6 +2498,244 @@ bool Instruction::interCompile()
     return okCompile;
 }
 
+/*
+ * Gère les flux input/Output lors de la compilation d'un << ou d'un >>
+ */
+void ManageStream(string s, char op, vector<DbVar*> varDb)
+{
+    string stream="";
+    bool isInQuo=false;
+    bool isInBra=false;
+    bool streamOk=false;
+    string arg="";
+    unsigned int k;
+    int numPar=0;
+    unsigned int numChe=0;
+    for(k=0;k<s.size();k++)
+    {
+        if(s[k]=='\'' && !isInBra)
+        {
+            if(k>0)
+            {
+                if(s[k-1]!='\\')
+                {
+                   isInQuo=!isInQuo;
+                }
+            }
+            else
+            {
+                isInQuo=!isInQuo;
+            }
+        }
+        if(s[k]=='"' && !isInQuo)
+        {
+            if(k>0)
+            {
+                if(s[k-1]!='\\')
+                {
+                   isInBra=!isInBra;
+                }
+            }
+            else
+            {
+                isInBra=!isInBra;
+            }
+        }
+        if(s[k]=='(' && !isInQuo && !isInBra)
+        {
+           numPar++;
+        }
+        if(s[k]==')' && !isInQuo && !isInBra)
+        {
+           numPar--;
+           numChe=0;
+           if(arg.compare("")!=0)
+           {
+               if(op=='<')
+               {
+                   Out(stream,new Instruction("Out_",arg,varDb));
+               }
+               else if(op=='>')
+               {
+                   In(stream,new Instruction("In_",arg,varDb));
+               }
+               arg="";
+           }
+        }
+        if(isNotSpe(s[k]) && !isInQuo && !isInBra && !streamOk)
+        {
+            stream+=s[k];
+        }
+        if(s[k]==op && !isInQuo && !isInBra && !streamOk)
+        {
+            streamOk=true;
+        }
+        if(s[k]==op && streamOk)
+        {
+            numChe++;
+        }
+        if(numChe==2 && s[k]!=op && streamOk)
+        {
+            arg+=s[k];
+        }
+        if(k==s.size()-1)
+        {
+            numChe=0;
+            if(arg.compare("")!=0)
+            {
+                if(op=='<')
+                {
+                    Out(stream,new Instruction("Out_",arg,varDb));
+                }
+                else if(op=='>')
+                {
+                    In(stream,new Instruction("In_",arg,varDb));
+                }
+                arg="";
+            }
+        }
+
+    }
+}
+
+
+/*
+ * renvoie le nom de la fonction dans s si une fonction y est appelée
+ * sinon renvoie ""
+ * si s de la forme inst(...) alors return "inst"
+ */
+string instInString(string s)
+{
+    string ret="";
+    string tmp="";
+    unsigned int k;
+    for(k=0;k<s.size();k++)
+    {
+        if(isNotSpe(s[k]))
+        {
+            tmp+=s[k];
+        }
+        if(s[k]!='(' && tmp.compare("")!=0)
+        {
+            ret=tmp;
+            break;
+        }
+    }
+    return ret;
+}
+
+/*
+ * si s=(var1,var2,...) return [var1]::[var2]::...
+ */
+vector<Vargen*> varInString(string s)
+{
+    vector<Vargen*> ret;
+    unsigned int k;
+    int numPar=0;
+    bool okVar=false;
+    string tmpVar="";
+    bool isInQuo=false;
+    bool isInBra=false;
+    for(k=0;k<s.size();k++)
+    {
+        if(s[k]=='"' && !isInQuo)
+        {
+            if(k>0)
+            {
+                if(s[k]!='\\')
+                {
+                    isInBra=!isInBra;
+                }
+            }
+            else
+            {
+                isInBra=!isInBra;
+            }
+        }
+        if(s[k]=='\'' && !isInBra)
+        {
+            if(k>0)
+            {
+                if(s[k]!='\\')
+                {
+                    isInQuo=!isInQuo;
+                }
+            }
+            else
+            {
+                isInQuo=!isInQuo;
+            }
+        }
+        if(s[k]=='(' && k==0 && !isInQuo && !isInBra)
+        {
+            numPar++;
+        }
+        if(s[k]==')' && k==s.size()-1 && !isInQuo && !isInBra)
+        {
+            numPar--;
+        }
+        if(numPar==1)
+        {
+            if(tmpVar.compare("")!=0)
+            {
+                Instruction* inst=new Instruction("var",tmpVar,context);
+                inst->compile();
+                if(inst->retour.size()==1)
+                {
+                    Vargen* var=inst->retour[0];
+                    if(var!=NULL)
+                    {
+                        ret.push_back(var);
+                    }
+                    else
+                    {
+                        Erreur("la variable de retour de l'instruction: "+inst->brut+" est NULL",context);
+                        break;
+                    }
+                }
+                delete inst;
+            }
+            break;
+        }
+        if(numPar<0)
+        {
+            Erreur("Trop de parenthèses fermantes",context);
+            break;
+        }
+        if(isNotSpe(s[k]))
+        {
+            tmpVar+=s[k];
+        }
+        if(s[k]==',')
+        {
+            if(tmpVar.compare("")!=0)
+            {
+                Instruction* inst=new Instruction("var",tmpVar,context);
+                inst->compile();
+                if(inst->retour.size()==1)
+                {
+                    Vargen* var=inst->retour[0];
+                    if(var!=NULL)
+                    {
+                        ret.push_back(var);
+                    }
+                    else
+                    {
+                        Erreur("la variable de retour de l'instruction: "+inst->brut+" est NULL",context);
+                        break;
+                    }
+                }
+                delete inst;
+            }
+            else
+            {
+                Erreur("Trop de virgules dans l'expression: "+s,context);
+                break;
+            }
+        }
+    }
+    return ret;
+}
 
 
 void Instruction::compile()
@@ -2429,6 +2747,7 @@ void Instruction::compile()
         //cout<<"compile name="<<name<<", type="<<type<<endl;
         if(type.compare(Prog)==0)
         {
+            vector<Instruction*> content;
             //cout<<"compile Prog"<<endl;
             for(k=0;k<cont.size();k++)
             {
@@ -2439,7 +2758,58 @@ void Instruction::compile()
                 string nameIns=name+idStr;
                 //DbVar* db=new DbVar(varPar,varTmp);
                 Instruction* ins=new Instruction(nameIns,actual,varDb);
+                content.push_back(ins);
                 ins->compile();
+            }
+            for(k=0;k<content.size();k++)
+            {
+                Instruction* ins=content.back();
+                delete ins;
+                content.pop_back();
+            }
+        }
+        else if(type.compare(Arg_)==0) //accès à l'argument n°num
+        {
+            if(cont.size()==1)
+            {
+                string crt=cont[0];
+                crt=crt.substr(1);
+                if(crt.size()>0)
+                {
+                    int size=crt.size();
+                    if(crt[size-1]==';')
+                    {
+                        crt=crt.substr(0,size-1);
+                    }
+                }
+                unsigned int num;
+                unsigned int size=crt.size();
+                if(size>2)
+                {
+                    crt=crt.substr(1,size-1);
+                    char* str=(char*)crt.c_str();
+                    int res=sscanf(str,"%u",&num);
+                    sscanf(str,"%*[\n]");
+                    if(res==1)
+                    {
+                        if(num<arg.size())
+                        {
+                            Vargen* ret=arg[num];
+                            if(ret!=NULL)
+                            {
+                                vector<Vargen*> exit;
+                                exit.push_back(ret);
+                                retour=exit;
+                            }
+                            else
+                            {
+                                Erreur("Arg: la variable "+crt+" est NULL",context);
+                            }
+
+                        }
+                    }
+                }
+
             }
         }
 
@@ -2464,7 +2834,7 @@ void Instruction::compile()
                 //cout<<arg1<<endl;
                 string arg2=crt.substr(i+nameOp.size());
                 //cout<<arg2<<endl;
-                Set(identity(arg1,varDb),new Instruction(name+"_Plus_"+"d",arg2,varDb));
+                Set(identity(arg1,arg,varDb),new Instruction(name+"_Plus_"+"d",arg2,varDb));
             }
         }
         else if(type.compare(If_)==0)
@@ -2622,7 +2992,7 @@ void Instruction::compile()
                         //cout<<"trueCrt="<<trueCrt<<endl;
                         if(trueCrt.size()>0)
                         {
-                            Vargen*ret=identity(trueCrt,varDb);
+                            Vargen*ret=identity(trueCrt,arg,varDb);
                             if(ret!=NULL)
                             {
                                 //ret->print();
@@ -2639,7 +3009,7 @@ void Instruction::compile()
                     }
                     else
                     {
-                        Vargen*ret=identity(crt,varDb);
+                        Vargen*ret=identity(crt,arg,varDb);
                         if(ret!=NULL)
                         {
                             vector<Vargen*> exit;
@@ -2648,7 +3018,7 @@ void Instruction::compile()
                         }
                         else
                         {
-                            Erreur("la variable "+crt+" est NULL",context);
+                            Erreur("Identity: la variable "+crt+" est NULL",context);
                         }
                     }
                 }
@@ -2656,7 +3026,7 @@ void Instruction::compile()
         }
         else if(type.compare(Return_)==0)
         {
-            //cout<<"Compile: Return"<<endl;
+            cout<<"Compile: Return"<<endl;
             if(cont.size()==1)
             {
                string crt=cont[0];
@@ -2932,6 +3302,7 @@ void Instruction::compile()
         //cas des opérateurs
         else if(type.compare(Cro_)==0)
         {
+            //cout<<"Compile: "<<type<<endl;
             string nameOp="[";
             if(cont.size()==1)
             {
@@ -2944,8 +3315,55 @@ void Instruction::compile()
                        crt=crt.substr(0,size-1);
                    }
                }
-
-
+               unsigned int i=indexInString2(nameOp,crt);
+               string arg1=crt.substr(0,i);
+               string arg2="";
+               int nbCro=1;
+               unsigned int l;
+               bool isInQuo=false;
+               bool isInBra=false;
+               for(l=i+1;l<crt.size();l++)//l aura pour valeur l'indice juste après l'argument 2
+               {
+                   if(crt[l]=='"' && !isInQuo)
+                   {
+                        if(crt[l-1]!='\\')
+                        {
+                            isInBra=!isInBra;
+                        }
+                   }
+                   if(crt[l]=='\'' && !isInBra)
+                   {
+                        if(crt[l-1]!='\\')
+                        {
+                            isInQuo=!isInQuo;
+                        }
+                   }
+                   if(crt[l]=='[' && !isInBra && !isInQuo)
+                   {
+                       nbCro++;
+                   }
+                   if(crt[l]==']' && !isInBra && !isInQuo)
+                   {
+                       nbCro--;
+                   }
+                   if(nbCro==0)
+                   {
+                       break;
+                   }
+               }
+               arg2=crt.substr(i+1,l-2);
+               Vargen* ret=Cro(new Instruction(name+"_"+type+"_1",arg1,varDb),new Instruction(name+"_"+type+"_num",arg2,varDb));
+               if(ret!=NULL)
+               {
+                   retour.clear();
+                   vector<Vargen*> exit;
+                   exit.push_back(ret);
+                   retour=exit;
+               }
+               else
+               {
+                   Erreur("la variable "+crt+" est NULL",context);
+               }
             }
         }
         else if(type.compare(Point_)==0)
@@ -2963,6 +3381,7 @@ void Instruction::compile()
                    }
                }
 
+
             }
         }
         else if(type.compare(Fleche_)==0)
@@ -2971,6 +3390,46 @@ void Instruction::compile()
             if(cont.size()==1)
             {
                string crt=cont[0];
+               if(crt.size()>0)
+               {
+                   int size=crt.size();
+                   if(crt[size-1]==';')
+                   {
+                       crt=crt.substr(0,size-1);
+                   }
+               }
+               unsigned int i=indexInString2(nameOp,crt);
+               string arg1=crt.substr(0,i);
+               Instruction* crtInst=new Instruction(name+"_"+type+"g",arg1,varDb);
+               crtInst->compile();
+               Vargen* var1=NULL;
+               if(crtInst->retour.size()==1)
+               {
+                  if(var1!=NULL)
+                  {
+                      Vargen* var1=crtInst->retour[0];
+                      unsigned int j=i+nameOp.size();
+                      string arg2=crt.substr(j);
+                      arg2=uselessPar(arg2);
+                      string fun=instInString(arg2);
+                      if(fun.compare("")!=0)
+                      {
+                          string argFun=crt.substr(j+fun.size());
+                          vector<Vargen*> argMeth=varInString(argFun);
+                          vector<Vargen*> ret=makeInstruction(fun,argMeth,arg,varDb,var1);
+                          retour=ret;
+                      }
+                      else
+                      {
+
+                      }
+                  }
+                  else
+                  {
+                      Erreur("la variable "+arg1+" est NULL",varDb);
+                  }
+               }
+               delete crtInst;
 
             }
         }
@@ -2988,7 +3447,9 @@ void Instruction::compile()
                        crt=crt.substr(0,size-1);
                    }
                }
-
+               unsigned int i=indexInString2(nameOp,crt);
+               string arg1=crt.substr(0,i);
+               Decr(identity(arg1,arg,varDb));
             }
         }
         else if(type.compare(Decr_)==0)
@@ -3005,6 +3466,9 @@ void Instruction::compile()
                        crt=crt.substr(0,size-1);
                    }
                }
+               unsigned int i=indexInString2(nameOp,crt);
+               string arg1=crt.substr(0,i);
+               Decr(identity(arg1,arg,varDb));
 
             }
         }
@@ -3022,7 +3486,7 @@ void Instruction::compile()
                         crt=crt.substr(0,size-1);
                     }
                 }
-
+                ManageStream(crt,'>',varDb);
             }
         }
         else if(type.compare(Out_)==0)
@@ -3039,8 +3503,7 @@ void Instruction::compile()
                        crt=crt.substr(0,size-1);
                    }
                }
-               unsigned int i=indexInString2(nameOp,crt);
-
+               ManageStream(crt,'<',varDb);
             }
 
         }
@@ -3690,7 +4153,7 @@ Instruction::Instruction(const Instruction& orig) {
 
 Instruction::~Instruction() {
     //cout<<"delete "<<name<<endl;
-    //arg.clear();
+    arg.clear();
     while(argT.size()>0)
     {
         unsigned int size=argT.size();

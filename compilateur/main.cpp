@@ -12,7 +12,15 @@ int main(int argc, char *argv[])
     vector<DbVar*> db;
     string s="NewVar(x,bool,false);NewVar(y,int,5);y*=5;If(!x&&(y==1)||(y!=1);(Return y;););";
     string s2="NewVar(z,string,cool);z=z+\" raoul\";Return z;";
-    Instruction* inst=new Instruction("Inst",s2,db);
+    string s3="NewVar(z,string,cool);NewVar(k,int,1);k++;Return z[k+1]";
+    string s4="cout<<\"Mathieu\"<<\" Black!\"<<endl";
+    string s5="NewVar(x,int);cout<<\"Quel age as tu?\"<<endl;cin>>x;cout<<\"Vous avez \"<<x<<\" ans\"<<endl";
+
+    /*
+     * faire une fonction qui étant donné une string remplace les arguments présents dans la string par ?[k] où k est le numéro d'argument dans l'instruction
+     */
+
+    Instruction* inst=new Instruction("Inst",s5,db);
     inst->compile();
     unsigned int k;
     for(k=0;k<inst->retour.size();k++)

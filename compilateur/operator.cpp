@@ -18,10 +18,11 @@ string Erreur_="Erreur";
 string Retour_="Retour";
 
 
-Vargen* identity(std::string cont, vector<DbVar*> varDb)
+Vargen* identity(std::string cont, vector<Vargen*> arg, vector<DbVar*> varDb)
 {
    int res;
    int nb;
+   //cout<<"dans identity: cont="<<cont<<endl;
    Vargen* ret=NULL;
    char* contC=(char*)cont.c_str();
 
@@ -108,6 +109,17 @@ Vargen* identity(std::string cont, vector<DbVar*> varDb)
        if(ret!=NULL)
        {
            break;
+       }
+   }
+   if(ret==NULL)
+   {
+       for(k=0;k<arg.size();k++)
+       {
+           if(arg[k]->name.compare(cont)==0)
+           {
+               ret=arg[k];
+               break;
+           }
        }
    }
 
@@ -788,6 +800,14 @@ Vargen* Cro(Instruction* inst, Instruction* num)
                 }
             }
         }
+        else
+        {
+            Erreur("Pas d'opérateur []("+var1->type->name+","+var2->type->name+")",context);
+        }
+    }
+    else
+    {
+        Erreur("Les instructions autour de l'opérateur crochet n'ont pas été corretement compilées",context);
     }
     return ret;
 }
@@ -970,6 +990,8 @@ void Out(std::string stream, Instruction* inst)
         }
         else
         {
+            //cout<<"dans Out"<<endl;
+            //var->print();
             string type=var->type->name;
             if(stream.compare("cout")==0)
             {
@@ -990,10 +1012,14 @@ void Out(std::string stream, Instruction* inst)
                     cout<<boolalpha<<var->valBool;
                 }
                 else if(type.compare(stringType)==0)
-                {
+                {                    
                     if(var->valStr.compare("endl")==0)
                     {
                         cout<<endl;
+                    }
+                    else
+                    {
+                        cout<<var->valStr;
                     }
                 }
             }
@@ -1020,6 +1046,7 @@ void Out(std::string stream, Instruction* inst)
                     }
                     else if(type.compare(stringType)==0)
                     {
+                        file<<var->valStr;
                         if(var->valStr.compare("endl")==0)
                         {
                             file<<endl;
@@ -1032,6 +1059,10 @@ void Out(std::string stream, Instruction* inst)
                 }
             }
         }
+    }
+    else
+    {
+        Erreur("lors du parsing de l'instruction à émettre sur "+stream,context);
     }
 }
 
@@ -1593,5 +1624,94 @@ void Retour(Vargen* ret, std::vector<DbVar *> _varDb)
         _varDb[0]->erase(Retour_);
         _varDb[0]->insert(retour);
     }
+}
+
+
+/*
+ * compile l'appel d'une instruction présente dans la bdd
+ * si var est Non NULL alors il s'agit d'un appel de methode liée à var
+ */
+vector<Vargen*> makeInstruction(string nameInst, std::vector<Vargen *> _arg, std::vector<Vargen*> exArg, std::vector<DbVar *> _varDb, Vargen* var)
+{
+    vector<Vargen*> ret;
+
+    //Recherche de l'instruction à compiler
+    string argT="";
+    unsigned int k;
+    vector<DbVar*> exContext=context; //on garde en mémoire l'ancien contexte
+    for(k=0;k<_arg.size();k++)
+    {
+        argT+=_arg[k]->type->name+";";
+    }
+    string id=getIdInstruction(nameInst,argT);
+    Instruction* inst=new Instruction(id);
+
+
+    //Préparation à la compilation
+    //Mise en place des arguments
+    for(k=0;k<_arg.size();k++)
+    {
+        inst->arg.push_back(_arg[k]);
+    }
+    //Mise en place des attributs de classe si l'instruction est une méthode
+    if(var!=NULL)
+    {
+        if(inst->varDb.size()>0)
+        {
+            DbVar* dbInst=inst->varDb[0];
+            for(k=0;k<var->arg.size();k++)
+            {
+                dbInst->insert(new Vargen(var->arg[k]));
+            }
+        }
+    }
+
+
+    //Compilation
+    inst->compile();
+    for(k=0;k<inst->retour.size();k++)
+    {
+        ret.push_back(inst->retour[k]);
+    }
+    delete inst;
+    context=exContext; //mise en place des anciennes variables
+
+
+    //Destruction des variables non réutilisées
+    for(k=0;k<_arg.size();k++)
+    {
+        Vargen* crtVar=_arg[k];
+        bool okDelete=true;
+        Vargen* search=NULL;
+        unsigned int j;
+        for(j=0;j<_varDb.size();j++)
+        {
+            search=_varDb[j]->find(crtVar->name);
+            if(search!=NULL)
+            {
+                okDelete=false;
+                break;
+            }
+        }
+        if(okDelete)
+        {
+            for(j=0;j<exArg.size();j++)
+            {
+                okDelete=!(crtVar->name.compare(exArg[j]->name)==0);
+                if(!okDelete)
+                {
+                    break;
+                }
+            }
+            if(okDelete)
+            {
+                crtVar->deleteVar();
+                delete crtVar;
+            }
+        }
+    }
+
+
+    return ret;
 }
 
