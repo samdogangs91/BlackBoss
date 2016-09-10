@@ -11,6 +11,8 @@
 #include "type.h"
 #include <vector>
 #include "dbvar.h"
+#include <cstdlib>
+#include <cstdio>
 
 class Vargen;
 class Type;
@@ -19,15 +21,19 @@ class DbVar;
 class Instruction {
 public:
     Instruction(std::string id);
-    Instruction(std::string _name,std::string _cont,std::vector<DbVar*> _var);
-    Instruction(std::string name,std::string argS, std::string retourS, std::string inst, unsigned int prior=2, std::string _assoc="droite", bool _isOp=false, bool tmp=false);
+    Instruction(std::string _name,std::string _cont,std::vector<Vargen*> _arg,std::vector<DbVar*> _var);
+    Instruction(std::string name,std::string argS, std::string retourS, std::string inst, bool tmp=true, unsigned int prior=2, std::string _assoc="droite", bool _isOp=false);
 
     //Attributs
     std::string name;
     unsigned int prior;
     std::string brut;
+    bool tmp; //instruction temporaire ou non
+    int index; //indice de l'appel de la fonction dans cont[0]
     bool isOp;
     bool ok;
+    std::vector<Instruction*> newInst; //nouvelles instructions créées dans l'instruction courante
+    std::vector<Instruction*> instFilles;
     std::string assoc;//Associativité à droite ou à gauche
     std::vector<std::string> cont;
     std::vector<Type*> argT; //types ds variables d'entrée
@@ -39,10 +45,13 @@ public:
     //DbVar* varTmp; //variables courantes
     //DbVar* varPar; //variables des instructions parentes
 
+    void initType(); //initialisation des types de base
+
     //Methodes de manipulation des instructions
     void preCompile(std::string inst); //remplis l'attribut cont et determine le type de l'instruction
     bool interCompile(); //gestion des signaux return, error, continue et break
     void compile(); //compilation
+    void determineType();
     void setValuesIn(std::vector<Vargen*> in);
 
     void print();
@@ -51,6 +60,9 @@ public:
 private:
 
 };
+
+
+std::string setArgInString(std::string brut, std::vector<Vargen*> arg);
 
 std::vector<std::string> getArg(std::string s, char sep, unsigned int numPar_=1);
 bool isWellPar(std::string s, unsigned int _nbFun=0);
@@ -66,9 +78,9 @@ void Else(Instruction* cond, Instruction* boucle);
 Vargen* identity(std::string cont, std::vector<Vargen*> arg, std::vector<DbVar*> _varDb);
 Vargen* Return(Instruction* inst);
 std::vector<Vargen*> makeInstruction(std::string nameInst, std::vector<Vargen*> _arg, std::vector<Vargen*> exArg, std::vector<DbVar*> _varDb, Vargen* var=NULL);
-Vargen* NewVar(std::string name, std::string type, std::vector<DbVar*> _varDb, std::string arg="", bool tmp=true);
+Vargen* NewVar(std::string name, std::string type, std::vector<Vargen*> funArg, std::vector<DbVar*> _varDb, std::string arg="", bool tmp=true);
 void deleteVar(std::string name, std::vector<DbVar*> _varDb);
-void NewInst(std::string name,std::string argS, std::string retourS, std::string inst, unsigned int prior=2, std::string _assoc="droite", bool _isOp=false, bool tmp=false);
+Instruction* NewInst(Instruction* name,Instruction* argS, Instruction* retourS, Instruction* inst, Instruction* tmp=NULL, Instruction* prior=NULL, Instruction* _assoc=NULL, Instruction* _isOp=NULL);
 void newType(std::string name, std::string desc, std::string cont, std::string meth);
 void addAtt(std::string nameType, std::string nameAtt, std::string typeAtt);
 void addMeth(std::string nameType, std::string nameMeth);

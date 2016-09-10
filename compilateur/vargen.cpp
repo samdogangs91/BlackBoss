@@ -45,6 +45,7 @@ bool isContainer(string name)
  */
 std::vector<Vargen*> makeArgVar(string _arg)
 {
+    //cout<<"dans makeArgvar: "<<_arg<<endl;
     std::vector<Vargen*> ret;
     unsigned int k=0;
     string name="";
@@ -52,13 +53,18 @@ std::vector<Vargen*> makeArgVar(string _arg)
     bool okName=true;// true quand le caractère courant doit etre dans le nom courant
     bool okType=false;// idem
     string nameVar="";//nom de la variable
-    while(k<_arg.size())
+    for(k=0;k<_arg.size();k++)
     {
         if(_arg[k]==';')
         {
-            if(isBasic(type) || type.compare("string")==0)
+            if(isBasic(type))
             {
-               ret.push_back(new Vargen(name,type,name));
+                //cout<<"name: "<<name<<", type:"<<type<<endl;
+                ret.push_back(new Vargen(name,type));
+            }
+            else if(type.compare(stringType)==0)
+            {
+                ret.push_back(new Vargen(name,type,name));
             }
             else
             {
@@ -66,6 +72,9 @@ std::vector<Vargen*> makeArgVar(string _arg)
             }
             okType=false;
             okName=true;
+            name="";
+            type="";
+            continue;
         }
         if(_arg[k]==':')
         {
@@ -81,7 +90,24 @@ std::vector<Vargen*> makeArgVar(string _arg)
             type+=_arg[k];
 
         }
-        k++;
+        if(k==_arg.size()-1)
+        {
+            if(type.compare("")!=0 && name.compare("")!=0)
+            {
+                if(isBasic(type))
+                {
+                   ret.push_back(new Vargen(name,type));
+                }
+                else if(type.compare(stringType)==0)
+                {
+                    ret.push_back(new Vargen(name,type,name));
+                }
+                else
+                {
+                    ret.push_back(new Vargen(name,type));
+                }
+            }
+        }
     }
     return ret;
 }

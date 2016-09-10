@@ -39,6 +39,7 @@ public:
     void setValueAtt(std::string nameAtt, std::string newVal);
     Vargen* getAtt(std::string nameAtt);
     void deleteVar();
+
     Instruction * getMeth(std::string id);
     Instruction* getMeth(std::string name,std::string argT="", std::string retourT="");
 
@@ -46,5 +47,7 @@ public:
 
     ~Vargen();
 };
+
+std::vector<Vargen*> makeArgVar(std::string _arg);
 
 #endif // VARGEN_H

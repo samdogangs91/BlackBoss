@@ -97,6 +97,10 @@ Vargen* identity(std::string cont, vector<Vargen*> arg, vector<DbVar*> varDb)
            {
                varDb[sizeTmp-2]->insert(ret);
            }
+           else
+           {
+               varDb[sizeTmp-1]->insert(ret);
+           }
            return ret;
        }
    }
@@ -145,7 +149,7 @@ Vargen* Return(Instruction* inst)
 }
 
 
-Vargen* NewVar(std::string name, std::string type, vector<DbVar*> _varDb, std::string arg, bool tmp)
+Vargen* NewVar(std::string name, std::string type, vector<Vargen*> funArg, vector<DbVar*> _varDb, std::string arg, bool tmp)
 {
     Vargen* ret=NULL;
     unsigned int k;
@@ -159,17 +163,30 @@ Vargen* NewVar(std::string name, std::string type, vector<DbVar*> _varDb, std::s
     }
     if(ret==NULL)
     {
-        //cout<<"tmp="<<boolalpha<<tmp<<endl;
-        ret=new Vargen(name,type,arg,tmp);
-        int size=_varDb.size();
-        if(size>1)
+        bool okCreate=true;
+        for(k=0;k<funArg.size();k++)
         {
-            _varDb[size-2]->insert(ret);
+            okCreate=!(name.compare(funArg[k]->name)==0);
+            if(!okCreate)
+            {
+                Erreur("La variable est déja présente dans les arguments",context);
+                break;
+            }
+        }
+        if(okCreate)
+        {
+            //cout<<"tmp="<<boolalpha<<tmp<<endl;
+            ret=new Vargen(name,type,arg,tmp);
+            int size=_varDb.size();
+            if(size>1)
+            {
+                _varDb[size-2]->insert(ret);
+            }
         }
     }
     else
     {
-        cout<<"Attention: La variable "<<name<<" existe déja!"<<endl;
+        Erreur("La variable "+name+" existe déja!",context);
     }
 
     return ret;
@@ -186,10 +203,255 @@ void deleteVar(string name, vector<DbVar*> varDb)
 }
 
 
-void NewInst(std::string name,std::string argS, std::string retourS, std::string _inst, unsigned int prior, std::string _assoc, bool _isOp, bool tmp)
+Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS_, Instruction* inst_,Instruction* tmp_, Instruction* prior_, Instruction* assoc_, Instruction* isOp_)
 {
-    Instruction* inst=new Instruction(name,argS,retourS,_inst,prior,_assoc,_isOp,tmp);
-    delete inst;
+    bool okName=false;
+    bool okArg=false;
+    bool okInst=false;
+    bool okRetour=false;
+    bool okTmp=false;
+    bool okPrior=false;
+    bool okAssoc=false;
+    bool okIsOp=false;
+    Instruction* ret=NULL;
+    string name="";
+    string argS="";
+    string retourS="";
+    string inst="";
+    bool tmp;
+    unsigned int prior;
+    string assoc="droite";
+    bool isOp;
+    //cout<<"compile name dans NewInst"<<endl;
+    if(name_!=NULL)
+    {
+        name_->compile();
+        if(name_->retour.size()==1)
+        {
+            Vargen* var=name_->retour[0];
+            if(var->type->name.compare(stringType)==0)
+            {
+                okName=true;
+                name=var->valStr;
+            }
+            else
+            {
+                Erreur("l'argument name de NewInst n'est pas de type string",context);
+            }
+        }
+        else
+        {
+            Erreur("le nom de l'instruction est NULL",context);
+        }
+    }
+    else
+    {
+        Erreur("Impossible d'obtenir le nom de l'instruction",context);
+    }
+
+    //cout<<"compile argS dans NewInst"<<endl;
+    if(argS_!=NULL)
+    {
+        argS_->compile();
+        if(argS_->retour.size()==1)
+        {
+            Vargen* var=argS_->retour[0];
+            if(var->type->name.compare(stringType)==0)
+            {
+                okArg=true;
+                argS=var->valStr;
+            }
+            else
+            {
+                Erreur("l'argument argS de NewInst n'est pas de type string",context);
+            }
+        }
+        else
+        {
+            Erreur("argS de l'instruction est NULL",context);
+        }
+    }
+    else
+    {
+        Erreur("Impossible d'obtenir argS de l'instruction",context);
+    }
+
+    //cout<<"compile retourS dans NewInst"<<endl;
+    if(retourS_!=NULL)
+    {
+        retourS_->compile();
+        if(retourS_->retour.size()==1)
+        {
+            Vargen* var=retourS_->retour[0];
+            if(var->type->name.compare(stringType)==0)
+            {
+                okRetour=true;
+                retourS=var->valStr;
+            }
+            else
+            {
+                Erreur("l'argument argS de NewInst n'est pas de type string",context);
+            }
+        }
+        else
+        {
+            Erreur("l'argument retourS de l'instruction est NULL",context);
+        }
+    }
+    else
+    {
+        Erreur("Impossible d'obtenir le type de retour de l'instruction",context);
+    }
+
+    if(inst_!=NULL)
+    {
+        inst_->compile();
+        if(inst_->retour.size()==1)
+        {
+            Vargen* var=inst_->retour[0];
+            if(var->type->name.compare(stringType)==0)
+            {
+                okInst=true;
+                inst=var->valStr;
+            }
+            else
+            {
+                Erreur("l'argument inst de NewInst n'est pas de type string",context);
+            }
+        }
+        else
+        {
+            Erreur("l'argument inst de l'instruction est NULL",context);
+        }
+    }
+    else
+    {
+        Erreur("Impossible d'obtenir le contenu de l'instruction",context);
+    }
+
+    if(tmp_!=NULL)
+    {
+        tmp_->compile();
+        if(tmp_->retour.size()==1)
+        {
+            Vargen* var=tmp_->retour[0];
+            if(var->type->name.compare(boolType)==0)
+            {
+                okTmp=true;
+                tmp=var->valBool;
+            }
+            else
+            {
+                Erreur("l'argument tmp de NewInst n'est pas de type bool",context);
+            }
+        }
+        else
+        {
+            Erreur("l'argument tmp de l'instruction est NULL",context);
+        }
+    }
+
+    if(prior_!=NULL)
+    {
+        prior_->compile();
+        if(prior_->retour.size()==1)
+        {
+            Vargen* var=prior_->retour[0];
+            if(var->type->name.compare(intType)==0)
+            {
+                prior=var->valInt;
+                if(prior>0 && prior<16)
+                {
+                   okPrior=true;
+                }
+                else
+                {
+                   Erreur("l'argument prior de l'instruction doit etre compris entre 0 et 15",context);
+                }
+            }
+            else
+            {
+                Erreur("l'argument prior de NewInst n'est pas de type int",context);
+            }
+        }
+        else
+        {
+            Erreur("l'argument prior de l'instruction est NULL",context);
+        }
+    }
+
+    if(assoc_!=NULL)
+    {
+        assoc_->compile();
+        if(assoc_->retour.size()==1)
+        {
+            Vargen* var=assoc_->retour[0];
+            if(var->type->name.compare(stringType)==0)
+            {
+                assoc=var->valStr;
+                okAssoc=(assoc.compare("gauche")==0)||(assoc.compare("droite")==0);
+                if(!okAssoc)
+                {
+                   Erreur("l'argument assoc vaut soit 'gauche' soit 'droite'",context);
+                }
+            }
+            else
+            {
+                Erreur("l'argument assoc de NewInst n'est pas de type string",context);
+            }
+        }
+        else
+        {
+            Erreur("l'argument assoc de l'instruction est NULL",context);
+        }
+    }
+
+    if(isOp_!=NULL)
+    {
+        isOp_->compile();
+        if(isOp_->retour.size()==1)
+        {
+            Vargen* var=isOp_->retour[0];
+            if(var->type->name.compare(boolType)==0)
+            {
+                okIsOp=true;
+                isOp=var->valBool;
+            }
+            else
+            {
+                Erreur("l'argument isOp de NewInst n'est pas de type bool",context);
+            }
+        }
+        else
+        {
+            Erreur("l'argument isOp de l'instruction est NULL",context);
+        }
+    }
+
+
+    if(okName && okArg && okRetour && okInst && okTmp && okPrior && okAssoc && okIsOp)
+    {
+        ret=new Instruction(name,argS,retourS,inst,tmp,prior,assoc,isOp);
+    }
+    else if(okName && okArg && okRetour && okInst && okTmp && okPrior && okAssoc)
+    {
+        ret=new Instruction(name,argS,retourS,inst,tmp,prior,assoc);
+    }
+    else if(okName && okArg && okRetour && okInst && okTmp && okPrior)
+    {
+        ret=new Instruction(name,argS,retourS,inst,tmp,prior);
+    }
+    else if(okName && okArg && okRetour && okInst && okTmp)
+    {
+        ret=new Instruction(name,argS,retourS,inst,tmp);
+    }
+    else if(okName && okArg && okRetour && okInst)
+    {
+        cout<<"création de l'instruction "<<name<<endl;
+        ret=new Instruction(name,argS,retourS,inst);
+        cout<<"Instruction "<<name<<" créé"<<endl;
+    }
+    return ret;
 }
 
 
