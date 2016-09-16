@@ -243,6 +243,7 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         {
             Erreur("le nom de l'instruction est NULL",context);
         }
+        //delete name_;
     }
     else
     {
@@ -270,6 +271,7 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         {
             Erreur("argS de l'instruction est NULL",context);
         }
+        //delete argS_;
     }
     else
     {
@@ -297,6 +299,7 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         {
             Erreur("l'argument retourS de l'instruction est NULL",context);
         }
+        //delete retourS_;
     }
     else
     {
@@ -323,6 +326,7 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         {
             Erreur("l'argument inst de l'instruction est NULL",context);
         }
+        //delete inst_;
     }
     else
     {
@@ -349,6 +353,7 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         {
             Erreur("l'argument tmp de l'instruction est NULL",context);
         }
+        //delete tmp_;
     }
 
     if(prior_!=NULL)
@@ -378,6 +383,7 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         {
             Erreur("l'argument prior de l'instruction est NULL",context);
         }
+        //delete prior_;
     }
 
     if(assoc_!=NULL)
@@ -404,6 +410,7 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         {
             Erreur("l'argument assoc de l'instruction est NULL",context);
         }
+        //delete assoc_;
     }
 
     if(isOp_!=NULL)
@@ -426,6 +433,7 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         {
             Erreur("l'argument isOp de l'instruction est NULL",context);
         }
+        //delete isOp_;
     }
 
 
@@ -447,9 +455,9 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
     }
     else if(okName && okArg && okRetour && okInst)
     {
-        cout<<"création de l'instruction "<<name<<endl;
+        //cout<<"création de l'instruction "<<name<<endl;
         ret=new Instruction(name,argS,retourS,inst);
-        cout<<"Instruction "<<name<<" créé"<<endl;
+        //cout<<"Instruction "<<name<<" créé"<<endl;
     }
     return ret;
 }
@@ -1931,11 +1939,12 @@ vector<Vargen*> makeInstruction(string nameInst, std::vector<Vargen *> _arg, std
 
     //Compilation
     inst->compile();
+    //cout<<"fin de compilation de "<<inst->name<<endl;
     for(k=0;k<inst->retour.size();k++)
     {
         ret.push_back(inst->retour[k]);
     }
-    delete inst;
+    //delete inst;
     context=exContext; //mise en place des anciennes variables
 
 
@@ -1972,7 +1981,7 @@ vector<Vargen*> makeInstruction(string nameInst, std::vector<Vargen *> _arg, std
             }
         }
     }
-
+    delete inst;
 
     return ret;
 }

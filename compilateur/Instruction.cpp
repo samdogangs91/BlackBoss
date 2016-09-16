@@ -13,6 +13,7 @@ using namespace std;
 
 string Arg_="?";
 string If_="If";
+string Else_="Else";
 string Set_="=";
 string For_="For";
 string While_="While";
@@ -76,6 +77,13 @@ extern string Retour_;
 extern string signalType;
 
 vector<DbVar*> context;
+
+
+bool isKeyWord(string name)
+{
+    return (Arg_.compare(name)==0)||(If_.compare(name)==0)||(Else_.compare(name)==0)||(Set_.compare(name)==0)||(For_.compare(name)==0)||(While_.compare(name)==0)||(Prog.compare(name)==0)||(NewVar_.compare(name)==0)||(Return_.compare(name)==0)||(Identity_.compare(name)==0)||(DeleteVar_.compare(name)==0)||(NewInst_.compare(name)==0)||(NewType_.compare(name)==0)||(AddAtt_.compare(name)==0)||(AddMeth_.compare(name)==0)||(ModifAtt_.compare(name)==0)||(DeleteAtt_.compare(name)==0)||(DeleteMeth_.compare(name)==0)||(Incr_.compare(name)==0)||(Decr_.compare(name)==0)||(SupEqual_.compare(name)==0)||(Sup_.compare(name)==0)||(InfEqual_.compare(name)==0)||(Inf_.compare(name)==0)||(Equal_.compare(name)==0)||(Diff_.compare(name)==0)||(PlusEqual_.compare(name)==0)||(Plus_.compare(name)==0)||(Moins_.compare(name)==0)||(MoinsEqual_.compare(name)==0)||(Mult_.compare(name)==0)||(MultEqual_.compare(name)==0)||(Div_.compare(name)==0)||(DivEqual_.compare(name)==0)||(Reste_.compare(name)==0)||(Cro_.compare(name)==0)||(Point_.compare(name)==0)||(Fleche_.compare(name)==0)||(In_.compare(name)==0)||(Out_.compare(name)==0)||(And_.compare(name)==0)||(Or_.compare(name)==0)||(Neg_.compare(name)==0);
+}
+
 
 
 /*
@@ -195,8 +203,10 @@ vector<Instruction*> orderInst(vector<Instruction*> _inst)
  */
 bool isOpe(char c)
 {
-    return (c=='+')||(c=='-')||(c=='*')||(c=='∕')||(c=='=')||(c=='!')||(c=='>')||(c=='<');
+    return (c=='+')||(c=='-')||(c=='*')||(c=='∕')||(c=='=')||(c=='!')||(c=='>')||(c=='<')||(c=='%')||(c=='|')||(c=='&')||(c==';')||(c=='.');
 }
+
+
 
 /*
  * return true si i est dans le tableau
@@ -394,13 +404,33 @@ string parenth(string s)
     bool isInBra_=false;
     for(k=0;k<s.size();k++)
     {
-        if(s[k]=='"' && !isInBra_)
+        if(s[k]=='"' && !isInQuo_)
         {
-            isInQuo_=!isInQuo_;
+            if(k>0)
+            {
+                if(s[k-1]!='\\')
+                {
+                    isInBra_=!isInBra_;
+                }
+            }
+            else
+            {
+                isInBra_=!isInBra_;
+            }
         }
-        if(s[k]=='\'' && !isInQuo_)
+        if(s[k]=='\'' && !isInBra_)
         {
-            isInBra_=!isInBra_;
+            if(k>0)
+            {
+                if(s[k-1]!='\\')
+                {
+                    isInQuo_=!isInQuo_;
+                }
+            }
+            else
+            {
+                isInQuo_=!isInQuo_;
+            }
         }
         if(isInQuo_||isInBra_)
         {
@@ -433,150 +463,123 @@ string parenth(string s)
                 {
                     actualFun="++";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='-' && s[k+1]=='-')
                 {
                     actualFun="--";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='=' && s[k+1]=='=')
                 {
                     actualFun="==";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='!' && s[k+1]=='=')
                 {
                     actualFun="!=";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='+' && s[k+1]=='=')
                 {
                     actualFun="++";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='-' && s[k+1]=='=')
                 {
                     actualFun="-=";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='*' && s[k+1]=='=')
                 {
                     actualFun="*=";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='/' && s[k+1]=='=')
                 {
                     actualFun="/=";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='>' && s[k+1]=='=')
                 {
                     actualFun=">=";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='<' && s[k+1]=='=')
                 {
                     actualFun="<=";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='-' && s[k+1]=='>')
                 {
                     actualFun="->";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='[')
                 {
                     actualFun="[]";
-                    k++;
-                    continue;
                 }
                 else if(s[k]=='&' && s[k+1]=='&')
                 {
                     actualFun="&&";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='|' && s[k+1]=='|')
                 {
                     actualFun="||";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='<' && s[k+1]=='<')
                 {
                     actualFun="<<";
                     k++;
-                    continue;
                 }
                 else if(s[k]=='>' && s[k+1]=='>')
                 {
                     actualFun=">>";
                     k++;
-                    continue;
                 }
             }
-            if(k<s.size())
+            if(k<s.size() && actualFun.compare("")==0)
             {
                 if(s[k]=='.')
                 {
                     actualFun=".";
-                    continue;
                 }
                 else if(s[k]=='=')
                 {
                     actualFun="=";
-                    continue;
                 }
                 else if(s[k]=='!')
                 {
                     actualFun="!";
-                    continue;
                 }
                 else if(s[k]=='+')
                 {
                     actualFun="+";
-                    continue;
                 }
                 else if(s[k]=='-')
                 {
                     actualFun="-";
-                    continue;
                 }
                 else if(s[k]=='*')
                 {
                     actualFun="*";
-                    continue;
                 }
                 else if(s[k]=='/')
                 {
                     actualFun="/";
-                    continue;
                 }
                 else if(s[k]=='%')
                 {
                     actualFun="%";
-                    continue;
                 }
                 else if(s[k]=='>')
                 {
                     actualFun=">";
-                    continue;
                 }
                 else if(s[k]=='<')
                 {
                     actualFun="<";
-                    continue;
                 }
             }
         }
@@ -611,6 +614,8 @@ string parenth(string s)
                 bool isRight=true;
                 bool isOp=false;
                 bool sameName=false;
+                bool isInQuo=false;
+                bool isInBra=false;
                 if(inst[k]->prior> inst[k+1]->prior)
                 {
                     isInst1=true;
@@ -668,6 +673,38 @@ string parenth(string s)
                        {
                            for(j=i-1;j>=0;j--)
                            {
+                               if(s[j]=='"' && !isInQuo)
+                               {
+                                   if(j>0)
+                                   {
+                                       if(s[j-1]!='\\')
+                                       {
+                                           isInBra=!isInBra;
+                                       }
+                                   }
+                                   else
+                                   {
+                                       isInBra=!isInBra;
+                                   }
+                               }
+                               if(s[j]=='\'' && !isInBra)
+                               {
+                                   if(j>0)
+                                   {
+                                       if(s[j-1]!='\\')
+                                       {
+                                           isInQuo=!isInQuo;
+                                       }
+                                   }
+                                   else
+                                   {
+                                       isInQuo=!isInQuo;
+                                   }
+                               }
+                               if(isInQuo||isInBra)
+                               {
+                                   continue;
+                               }
                                if(s[j]==')')
                                {
                                    numPar2--;
@@ -681,7 +718,7 @@ string parenth(string s)
                                {
                                    numPar2++;
                                }
-                               if(!isNotSpe(s[j]) && numPar2==0) //si le caractère ne peut pas être dans une variable
+                               if(/*!isNotSpe(s[j])*/ isOpe(s[j]) && numPar2==0) //si le caractère ne peut pas être dans une variable
                                {
                                    break;
                                }
@@ -731,6 +768,39 @@ string parenth(string s)
                                }
                                if(l>i && !ok)
                                {
+                                   if(s[l]=='"' && !isInQuo)
+                                   {
+                                       if(l>0)
+                                       {
+                                           if(s[l-1]!='\\')
+                                           {
+                                               isInBra=!isInBra;
+                                           }
+                                       }
+                                       else
+                                       {
+                                           isInBra=!isInBra;
+                                       }
+                                   }
+                                   if(s[l]=='\'' && !isInBra)
+                                   {
+                                       if(l>0)
+                                       {
+                                           if(s[l-1]!='\\')
+                                           {
+                                               isInQuo=!isInQuo;
+                                           }
+                                       }
+                                       else
+                                       {
+                                           isInQuo=!isInQuo;
+                                       }
+                                   }
+                                   if(isInQuo||isInBra)
+                                   {
+                                       ret+=s[l];
+                                       continue;
+                                   }
                                    if(s[l]=='(')
                                    {
                                        numPar2++;
@@ -745,7 +815,7 @@ string parenth(string s)
                                    {
                                        numPar2++;
                                    }
-                                   if(!isNotSpe(s[l]) && numPar2==0)
+                                   if(/*!isNotSpe(s[l])*/ isOpe(s[l]) && numPar2==0)
                                    {
                                        ret+=')';
                                        ok=true;
@@ -767,6 +837,44 @@ string parenth(string s)
                                {
                                    if(l>i && !ok)
                                    {
+                                       if(s[l]=='"' && !isInQuo)
+                                       {
+                                           if(l>0)
+                                           {
+                                               if(s[l-1]!='\\')
+                                               {
+                                                   isInBra=!isInBra;
+                                               }
+                                           }
+                                           else
+                                           {
+                                               isInBra=!isInBra;
+                                           }
+                                       }
+                                       if(s[l]=='\'' && !isInBra)
+                                       {
+                                           if(l>0)
+                                           {
+                                               if(s[l-1]!='\\')
+                                               {
+                                                   isInQuo=!isInQuo;
+                                               }
+                                           }
+                                           else
+                                           {
+                                               isInQuo=!isInQuo;
+                                           }
+                                       }
+                                       if(isInQuo||isInBra)
+                                       {
+                                           ret+=s[l];
+                                           continue;
+                                       }
+                                       if(isInQuo||isInBra)
+                                       {
+                                           ret+=s[l];
+                                           continue;
+                                       }
                                        if(s[l]=='(')
                                        {
                                            numPar2++;
@@ -781,7 +889,7 @@ string parenth(string s)
                                        {
                                            numPar2++;
                                        }
-                                       if(!isNotSpe(s[l]) && numPar2==0)
+                                       if(/*!isNotSpe(s[l])*/ isOpe(s[l]) && numPar2==0)
                                        {
                                            ret+=')';
                                            ok=true;
@@ -807,14 +915,47 @@ string parenth(string s)
                        {
                            i=indexInString("[",s,tab,isRight);
                        }
+                       //cout<<"indexInString: "<<i<<endl;
                        tab.push_back(i+1);
                        int j;
                        int nbCro=0;
                        if(i>0)
                        {
                            int numPar2=0;
-                           for(j=i-1;j>=0;j--)
+                           for(j=i-1;j>=0;j--) //j aura pour valeur l'indice juste avant le début du premier argument
                            {
+                               if(s[j]=='"' && !isInQuo)
+                               {
+                                   if(j>0)
+                                   {
+                                       if(s[j-1]!='\\')
+                                       {
+                                           isInBra=!isInBra;
+                                       }
+                                   }
+                                   else
+                                   {
+                                       isInBra=!isInBra;
+                                   }
+                               }
+                               if(s[j]=='\'' && !isInBra)
+                               {
+                                   if(j>0)
+                                   {
+                                       if(s[j-1]!='\\')
+                                       {
+                                           isInQuo=!isInQuo;
+                                       }
+                                   }
+                                   else
+                                   {
+                                       isInQuo=!isInQuo;
+                                   }
+                               }
+                               if(isInQuo||isInBra)
+                               {
+                                   continue;
+                               }
                                if(s[j]==')')
                                {
                                    numPar2--;
@@ -841,7 +982,7 @@ string parenth(string s)
                                {
                                    nbCro++;
                                }
-                               if(!isNotSpe(s[j]) && numPar2==0 && nbCro==0) //si le caractère ne peut pas être dans une variable
+                               if(isOpe(s[j]) && numPar2==0 && nbCro==0) //si le caractère ne peut pas être dans une variable
                                {
                                    break;
                                }
@@ -850,7 +991,8 @@ string parenth(string s)
                            int nbCro=0;
                            bool ok=false;
                            int nbOk=0;
-                           for(l=0;l<s.size();l++)
+                           ret=s.substr(0,j+1);
+                           for(l=j+1;l<s.size();l++)
                            {
                                if(ok && nbOk==0)
                                {
@@ -912,19 +1054,35 @@ string parenth(string s)
                             {
                                 if(s[j]=='"' && !isInQuo)
                                 {
-                                    isInBra=(!isInBra);
-                                    if(!isInBra)
+                                    if(j>0)
                                     {
-                                        continue;
+                                        if(s[j-1]!='\\')
+                                        {
+                                            isInBra=!isInBra;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        isInBra=!isInBra;
                                     }
                                 }
                                 if(s[j]=='\'' && !isInBra)
                                 {
-                                    isInQuo=!isInQuo;
-                                    if(!isInQuo)
+                                    if(j>0)
                                     {
-                                        continue;
+                                        if(s[j-1]!='\\')
+                                        {
+                                            isInQuo=!isInQuo;
+                                        }
                                     }
+                                    else
+                                    {
+                                        isInQuo=!isInQuo;
+                                    }
+                                }
+                                if(isInQuo||isInBra)
+                                {
+                                    continue;
                                 }
                                 if(s[j]==')'&& !isInQuo && !isInBra)
                                 {
@@ -952,7 +1110,7 @@ string parenth(string s)
                                 {
                                     nbCro++;
                                 }                                
-                                if(!isNotSpe(s[j]) && numPar2==0 && nbCro==0 && j!=(i-1) && !isInQuo && !isInBra) //si le caractère ne peut pas être dans une variable
+                                if(isOpe(s[j]) && numPar2==0 && nbCro==0 && j!=(i-1) && !isInQuo && !isInBra) //si le caractère ne peut pas être dans une variable
                                 {
                                     break;
                                 }
@@ -969,7 +1127,17 @@ string parenth(string s)
                                 if(s[m]=='"' && !isInQuo)
                                 {
                                     //cout<<"isInBra="<<boolalpha<<isInBra<<endl;
-                                    isInBra=!isInBra;
+                                    if(m>0)
+                                    {
+                                        if(s[m]!='\\')
+                                        {
+                                            isInBra=!isInBra;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        isInBra=!isInBra;
+                                    }
                                     if(!isInBra)
                                     {
                                         continue;
@@ -977,7 +1145,17 @@ string parenth(string s)
                                 }
                                 if(s[m]=='\'' && !isInBra)
                                 {
-                                   isInQuo=!isInQuo;
+                                    if(m>0)
+                                    {
+                                        if(s[m]!='\\')
+                                        {
+                                            isInQuo=!isInQuo;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        isInQuo=!isInQuo;
+                                    }
                                    if(!isInQuo) //si on est pas dans une quote
                                    {
                                        continue;
@@ -1009,7 +1187,7 @@ string parenth(string s)
                                 {
                                     nbCro--;
                                 }
-                                if(!isNotSpe(s[m]) && numPar2==0 && nbCro==0 && m!=i+1 && !isInQuo && !isInBra) //si le caractère ne peut pas être dans une variable
+                                if(isOpe(s[m]) && numPar2==0 && nbCro==0 && m!=i+1 && !isInQuo && !isInBra) //si le caractère ne peut pas être dans une variable
                                 {
                                     break;
                                 }
@@ -1063,6 +1241,38 @@ string parenth(string s)
                         for(j=i+name.size();j<s.size();j++)
                         {
                             ret+=s[j];
+                            if(s[j]=='"' && !isInQuo)
+                            {
+                                if(j>0)
+                                {
+                                    if(s[j-1]!='\\')
+                                    {
+                                        isInBra=!isInBra;
+                                    }
+                                }
+                                else
+                                {
+                                    isInBra=!isInBra;
+                                }
+                            }
+                            if(s[j]=='\'' && !isInBra)
+                            {
+                                if(j>0)
+                                {
+                                    if(s[j-1]!='\\')
+                                    {
+                                        isInQuo=!isInQuo;
+                                    }
+                                }
+                                else
+                                {
+                                    isInQuo=!isInQuo;
+                                }
+                            }
+                            if(isInQuo||isInBra)
+                            {
+                                continue;
+                            }
                             if(s[j]==')' && numPar2==0)
                             {
                                 ret+=')';
@@ -1089,6 +1299,38 @@ string parenth(string s)
                             for(j=i+name.size();j<s.size();j++)
                             {
                                 ret+=s[j];
+                                if(s[j]=='"' && !isInQuo)
+                                {
+                                    if(j>0)
+                                    {
+                                        if(s[j-1]!='\\')
+                                        {
+                                            isInBra=!isInBra;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        isInBra=!isInBra;
+                                    }
+                                }
+                                if(s[j]=='\'' && !isInBra)
+                                {
+                                    if(j>0)
+                                    {
+                                        if(s[j-1]!='\\')
+                                        {
+                                            isInQuo=!isInQuo;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        isInQuo=!isInQuo;
+                                    }
+                                }
+                                if(isInQuo||isInBra)
+                                {
+                                    continue;
+                                }
                                 if(s[j]==')' && numPar2==0)
                                 {
                                     ret+=')';
@@ -1108,6 +1350,7 @@ string parenth(string s)
 
                 }
 
+                //cout<<"parenth: "<<ret<<endl;
             }
 
         }
@@ -1777,7 +2020,7 @@ void Instruction::determineType()
             }
 
         }
-        if(cont[0].size()>1)
+        if(cont[0].size()>1 && type.compare("")==0)
         {
             string crt=cont[0];
             if(crt[0]=='?')
@@ -1790,6 +2033,7 @@ void Instruction::determineType()
             type=Identity_;
         }
     }
+    //cout<<"okType"<<endl;
 }
 
 
@@ -1823,6 +2067,7 @@ void Instruction::preCompile(string inst)
         determineType();
     }
     ok=((cont.size()>1)&&(type.compare(Prog)==0))||((cont.size()==1) && (type.compare(Prog)!=0));
+    //cout<<"okPreCompile"<<endl;
 }
 
 
@@ -1968,9 +2213,8 @@ string setArgInString(string brut, vector<Vargen*> arg)
                {
                    char numStr[4]={};
                    sprintf(numStr,"%d",i);
-                   string num="?[";
+                   string num="?";
                    num+=numStr;
-                   num+="]";
                    s+=num;
                    var="";
                }
@@ -2042,6 +2286,7 @@ Instruction::Instruction(string _name, string argS, string retourS, string inst,
     assoc=((_assoc.compare("droite")==0)? "droite" : "gauche");    
     arg=makeArgVar(argS);
     brut=setArgInString(inst,arg);
+    //brut=uselessPar(brut);
     //retourS=retourS2;
     //cout<<"brut= "<<brut<<endl;
     unsigned int k;
@@ -2092,7 +2337,7 @@ Instruction::Instruction(string _name, string argS, string retourS, string inst,
 
         string isOpS=(isOp? "true" : "false");
         string req="insert into instruction(name,argT,retourT,cont,prior,assoc,isOp) values("+nameId+","+argTId+","+retourId+","+instId+","+priorS+","+assocId+","+isOpS+");";
-        cout<<"requete inst:"<<req<<endl;
+        //cout<<"requete inst:"<<req<<endl;
         memory->insert(req);
 
     }
@@ -2298,6 +2543,14 @@ void Else(Instruction *cond, Instruction *boucle)
                 boucle->compile();
             }
         }
+        else
+        {
+            Erreur("La variable de condition du else n'est pas un booleen",context);
+        }
+    }
+    else
+    {
+        Erreur("L'instruction n°1 dans else ne renvoit rien",context);
     }
 
 }
@@ -2366,27 +2619,30 @@ string getIdInstruction(string name, string argT, string retourT)
         }
         else
         {
-            string req="select ins_id from instruction where name="+nameId+" and "+argTId+";";
-            MYSQL_RES* res=memory->request(req);
-            if(res!=NULL)
+            if(nameId.compare("")!=0 && argTId.compare("")!=0)
             {
-                MYSQL_ROW row;
-                if(row=mysql_fetch_row(res))
+                string req="select ins_id from instruction where name="+nameId+" and argT="+argTId+";";
+                MYSQL_RES* res=memory->request(req);
+                if(res!=NULL)
                 {
-                    id=(row[0]? row[0]:"");
+                    MYSQL_ROW row;
+                    if(row=mysql_fetch_row(res))
+                    {
+                        id=(row[0]? row[0]:"");
+                    }
+                    else
+                    {
+                        //cout<<"l'instruction "<<name<<"("+argT+") n'existe pas"<<endl;
+                    }
+                    if(row=mysql_fetch_row(res))
+                    {
+                        cout<<"Attention: il existe plusieurs instruction de même prototype d'argument"<<endl;
+                    }
                 }
                 else
                 {
-                    //cout<<"l'instruction "<<name<<"("+argT+") n'existe pas"<<endl;
+                    cout<<"Erreur requete sql: "<<req<<endl;
                 }
-                if(row=mysql_fetch_row(res))
-                {
-                    cout<<"Attention: il existe plusieurs instruction de même prototype d'argument"<<endl;
-                }
-            }
-            else
-            {
-                cout<<"Erreur requete sql: "<<req<<endl;
             }
         }
     }
@@ -2521,18 +2777,18 @@ vector<string> getArg(string s, char sep, unsigned int numPar_)
 /*
  * si s=(arg1,arg2,...) return [Instruction(arg1)]::...
  */
-vector<Instruction*> subInst(string s,string nameInst)
+vector<Instruction*> subInst(string s,string nameInst,vector<Vargen*> arg)
 {
     vector<Instruction*> ret;
     vector<string> retStr=getArg(s,',');
-    vector<Vargen*> newArg;
     unsigned int k;
     for(k=0;k<retStr.size();k++)
     {
-        char* kStr;
+        char kStr[4];
         sprintf(kStr,"%d",k);
         string kS=kStr;
-        ret.push_back(new Instruction(nameInst+kS,retStr[k],newArg,context));
+        ret.push_back(new Instruction(nameInst+kS,retStr[k],arg,context));
+
     }
     return ret;
 }
@@ -2655,6 +2911,33 @@ unsigned int indexInString2(string name, string s)
 bool Instruction::interCompile()
 {
     bool okCompile=true;
+    if(argT.size()<arg.size() && !isKeyWord(type))
+    {
+        okCompile=false;
+        //cout<<"type= "<<type<<endl;
+        Erreur("Trop d'arguments dans "+name,context);
+    }
+    else if(argT.size()>arg.size() && !isKeyWord(type))
+    {
+        okCompile=false;
+        Erreur("Trop peu d'arguments dans "+name,context);
+    }
+    else if(argT.size()==arg.size())
+    {
+        unsigned int k;
+        for(k=0;k<argT.size();k++)
+        {
+            if(argT[k]->name.compare(arg[k]->type->name)!=0)
+            {
+                okCompile=false;
+                stringstream num;
+                num<<k;
+                string numS="";
+                num>>numS;
+                Erreur("L'argument "+numS+" est de type "+arg[k]->type->name+" mais "+name+" attendait un argument de type "+argT[k]->name,context);
+            }
+        }
+    }
     if(varDb.size()>0)
     {
         Vargen* noBuild=NULL;
@@ -2743,10 +3026,10 @@ bool Instruction::interCompile()
 /*
  * Gère les flux input/Output lors de la compilation d'un << ou d'un >>
  */
-void ManageStream(string s, char op, vector<DbVar*> varDb)
+void ManageStream(string s, char op, vector<Vargen*> exArg, vector<DbVar*> varDb)
 {
     string stream="";
-    vector<Vargen*> newArg;
+    vector<Vargen*> newArg=exArg;
     bool isInQuo=false;
     bool isInBra=false;
     bool streamOk=false;
@@ -2913,6 +3196,10 @@ vector<Vargen*> varInString(string s)
         if(s[k]=='(' && k==0 && !isInQuo && !isInBra)
         {
             numPar++;
+            if(k==0)
+            {
+                continue;
+            }
         }
         if(s[k]==')' && k==s.size()-1 && !isInQuo && !isInBra)
         {
@@ -2920,73 +3207,91 @@ vector<Vargen*> varInString(string s)
         }
         if(numPar==1)
         {
-            if(tmpVar.compare("")!=0)
+            if(s[k]==',' && !isInQuo && !isInBra)
             {
-                Instruction* inst=new Instruction("var",tmpVar,newArg,context);
-                inst->compile();
-                if(inst->retour.size()==1)
+                if(tmpVar.compare("")!=0)
                 {
-                    Vargen* var=inst->retour[0];
-                    if(var!=NULL)
+                    Instruction* inst=new Instruction("var",tmpVar,newArg,context);
+                    inst->compile();
+                    if(inst->retour.size()==1)
                     {
-                        ret.push_back(var);
+                        Vargen* var=inst->retour[0];
+                        //var->print();
+                        if(var!=NULL)
+                        {
+                            ret.push_back(new Vargen(var));
+                        }
+                        else
+                        {
+                            Erreur("la variable de retour de l'instruction: "+inst->brut+" est NULL",context);
+                            break;
+                        }
                     }
                     else
                     {
-                        Erreur("la variable de retour de l'instruction: "+inst->brut+" est NULL",context);
-                        break;
+                        Erreur("L'instruction de contenu: "+tmpVar+" ne renvoie rien",context);
                     }
+                    delete inst;
                 }
-                delete inst;
+                else
+                {
+                    Erreur("Trop de virgules dans l'expression: "+s,context);
+                    break;
+                }
+                tmpVar="";
+                continue;
             }
-            break;
+            if(k==s.size()-2)
+            {
+                if(tmpVar.compare("")!=0)
+                {
+                    Instruction* inst=new Instruction("var",tmpVar,newArg,context);
+                    cout<<"toCompile"<<endl;
+                    inst->compile();
+                    if(inst->retour.size()==1)
+                    {
+                        Vargen* var=inst->retour[0];
+                        //var->print();
+                        if(var!=NULL)
+                        {
+                            ret.push_back(new Vargen(var));
+                        }
+                        else
+                        {
+                            Erreur("la variable de retour de l'instruction: "+inst->brut+" est NULL",context);
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        Erreur("L'instruction de contenu: "+tmpVar+" ne renvoie rien",context);
+                    }
+                    delete inst;
+                }
+                break;
+            }
+            tmpVar+=s[k];
         }
         if(numPar<0)
         {
             Erreur("Trop de parenthèses fermantes",context);
             break;
         }
-        if(isNotSpe(s[k]))
-        {
-            tmpVar+=s[k];
-        }
-        if(s[k]==',')
-        {
-            if(tmpVar.compare("")!=0)
-            {
-                Instruction* inst=new Instruction("var",tmpVar,newArg,context);
-                inst->compile();
-                if(inst->retour.size()==1)
-                {
-                    Vargen* var=inst->retour[0];
-                    if(var!=NULL)
-                    {
-                        ret.push_back(var);
-                    }
-                    else
-                    {
-                        Erreur("la variable de retour de l'instruction: "+inst->brut+" est NULL",context);
-                        break;
-                    }
-                }
-                delete inst;
-            }
-            else
-            {
-                Erreur("Trop de virgules dans l'expression: "+s,context);
-                break;
-            }
-        }
+
     }
     return ret;
 }
 
 
+
+/*
+ * traduction du contenu de l'instruction en action cpp
+ */
 void Instruction::compile()
 {
     unsigned int k=0;
     bool okCompile=interCompile();
-
+    //cout<<"after interCompile"<<endl;
     if(okCompile)
     {
         //cout<<"compile name="<<name<<", type="<<type<<endl;
@@ -2998,22 +3303,16 @@ void Instruction::compile()
             for(k=0;k<cont.size();k++)
             {
                 string name_=recopieString(name);
-                cout<<"Dans "<<name_<<" instruction  n°"<<k<<endl;
+                //cout<<"Dans "<<name_<<" instruction  n°"<<k<<endl;
                 string actual=cont[k];
                 stringstream ss;
                 ss<<name_<<k;
                 string nameIns="";
                 ss>>nameIns;
-
-                //char id[4]={};
-                //snprintf(id,"%d",k);
-                //string idStr=id;
-                //string nameIns=name+idStr;
-                //DbVar* db=new DbVar(varPar,varTmp);
-                Instruction* ins=new Instruction(nameIns,actual,newArg,varDb);
+                Instruction* ins=new Instruction(nameIns,actual,arg,varDb);
                 content.push_back(ins);
                 ins->compile();
-                cout<<"fin d'instruction"<<endl;
+                //cout<<"fin d'instruction"<<endl;
                 //cout<<ins->name<<" a fini de compiler"<<endl;
             }
             for(k=0;k<content.size();k++)
@@ -3027,8 +3326,9 @@ void Instruction::compile()
         {
             if(cont.size()==1)
             {
-                cout<<"compile "<<type<<endl;
+                //cout<<"compile "<<type<<endl;
                 string crt=cont[0];
+                crt=uselessPar(crt);
                 crt=crt.substr(1);
                 if(crt.size()>0)
                 {
@@ -3038,33 +3338,44 @@ void Instruction::compile()
                         crt=crt.substr(0,size-1);
                     }
                 }
-                cout<<"crt="<<crt<<endl;
+                //cout<<"crt= '"<<crt<<"'"<<endl;
                 unsigned int num;
                 unsigned int size=crt.size();
-                if(size>2)
+                char* str=(char*)crt.c_str();
+                //cout<<"str: "<<str<<endl;
+                int res=sscanf(str,"%u",&num);
+                sscanf(str,"%*[\n]");
+                if(res==1)
                 {
-                    crt=crt.substr(1,size-1);
-                    char* str=(char*)crt.c_str();
-                    int res=sscanf(str,"%u",&num);
-                    sscanf(str,"%*[\n]");
-                    if(res==1)
+                    if(num<arg.size())
                     {
-                        if(num<arg.size())
+                        Vargen* ret=arg[num];
+                        if(ret!=NULL)
                         {
-                            Vargen* ret=arg[num];
-                            if(ret!=NULL)
-                            {
-                                vector<Vargen*> exit;
-                                exit.push_back(ret);
-                                retour=exit;
-                            }
-                            else
-                            {
-                                Erreur("Arg: la variable "+crt+" est NULL",context);
-                            }
-
+                            vector<Vargen*> exit;
+                            ret->print();
+                            exit.push_back(ret);
+                            retour=exit;
                         }
+                        else
+                        {
+                            Erreur("Arg: la variable "+crt+" est NULL",context);
+                        }
+
                     }
+                    else
+                    {
+                        stringstream ss;
+                        ss<<arg.size();
+                        string sizeS="";
+                        ss>>sizeS;
+                        string strS=str;
+                        Erreur("tentative d'accès à l'argument "+strS+" alors que l'instruction possède "+sizeS+" argument(s)",context);
+                    }
+                }
+                else
+                {
+                    Erreur("lecture du numéro de l'argument",context);
                 }
 
             }
@@ -3091,7 +3402,7 @@ void Instruction::compile()
                 //cout<<arg1<<endl;
                 string arg2=crt.substr(i+nameOp.size());
                 //cout<<arg2<<endl;
-                Set(identity(arg1,arg,varDb),new Instruction(name+"_Plus_"+"d",arg2,newArg,varDb));
+                Set(identity(arg1,arg,varDb),new Instruction(name+"_Set_"+"d",arg2,arg,varDb));
             }
         }
         else if(type.compare(If_)==0)
@@ -3114,7 +3425,7 @@ void Instruction::compile()
                         sprintf(unTmp,"%d",1);
                         string un=unTmp;
                         //DbVar* db=new DbVar(varPar,varTmp);
-                        If(new Instruction(name+"_"+zero,inst[0],newArg,varDb),new Instruction(name+"_"+un,inst[1],newArg,varDb));
+                        If(new Instruction(name+"_"+zero,inst[0],arg,varDb),new Instruction(name+"_"+un,inst[1],arg,varDb));
                     }
                     else if(inst.size()<2)
                     {
@@ -3153,7 +3464,7 @@ void Instruction::compile()
                         sprintf(troisTmp,"%d",3);
                         string trois=troisTmp;
                         //DbVar* db=new DbVar(varPar,varTmp);
-                        For(new Instruction(name+"_"+zero,inst[0],newArg,varDb),new Instruction(name+"_"+un,inst[1],newArg,varDb),new Instruction(name+"_"+deux,inst[2],newArg,varDb),new Instruction(name+"_"+trois,inst[3],newArg,varDb));
+                        For(new Instruction(name+"_"+zero,inst[0],newArg,varDb),new Instruction(name+"_"+un,inst[1],arg,varDb),new Instruction(name+"_"+deux,inst[2],arg,varDb),new Instruction(name+"_"+trois,inst[3],arg,varDb));
                     }
                     else if(inst.size()<4)
                     {
@@ -3186,7 +3497,7 @@ void Instruction::compile()
                         sprintf(unTmp,"%d",1);
                         string un=unTmp;
                         //DbVar* db=new DbVar(varPar,varTmp);
-                        While(new Instruction(name+"_"+zero,inst[0],newArg,varDb),new Instruction(name+"_"+un,inst[1],newArg,varDb));
+                        While(new Instruction(name+"_"+zero,inst[0],arg,varDb),new Instruction(name+"_"+un,inst[1],arg,varDb));
                     }
                     else if(inst.size()<2)
                     {
@@ -3288,8 +3599,8 @@ void Instruction::compile()
             {
                string crt=cont[0];
                crt=crt.substr(7);
-               //cout<<"crt="<<crt<<endl;
-               Vargen* var=Return(new Instruction("Return_"+name,crt,newArg,varDb));
+               cout<<"arg.size= "<<arg.size()<<endl;
+               Vargen* var=Return(new Instruction("Return_"+name,crt,arg,varDb));
                Retour(var,varDb);
             }
         }
@@ -3318,34 +3629,35 @@ void Instruction::compile()
         }
         else if(type.compare(NewInst_)==0)
         {
-            cout<<"Compile: NewInst"<<endl;
+            //cout<<"Compile: NewInst"<<endl;
             if(cont.size()==1)
             {
                 int nbArg=4;
                 string crt=cont[0];
                 crt=crt.substr(6);
-                vector<Instruction*> inst=subInst(crt,name);
+                vector<Instruction*> inst=subInst(crt,name,arg);
+                Instruction* ret=NULL;
                 if(inst.size()==nbArg+4)
                 {
-                    NewInst(inst[0],inst[1],inst[2],inst[3],inst[4],inst[5],inst[6],inst[7]);
+                    ret=NewInst(inst[0],inst[1],inst[2],inst[3],inst[4],inst[5],inst[6],inst[7]);
 
                 }
                 else if(inst.size()==nbArg+3)
                 {
-                    NewInst(inst[0],inst[1],inst[2],inst[3],inst[4],inst[5],inst[6]);
+                    ret=NewInst(inst[0],inst[1],inst[2],inst[3],inst[4],inst[5],inst[6]);
 
                 }
                 else if(inst.size()==nbArg+2)
                 {
-                    NewInst(inst[0],inst[1],inst[2],inst[3],inst[4],inst[5]);
+                    ret=NewInst(inst[0],inst[1],inst[2],inst[3],inst[4],inst[5]);
                 }
                 else if(inst.size()==nbArg+1)
                 {
-                    NewInst(inst[0],inst[1],inst[2],inst[3],inst[4]);
+                    ret=NewInst(inst[0],inst[1],inst[2],inst[3],inst[4]);
                 }
                 else if(inst.size()==nbArg)
                 {
-                    NewInst(inst[0],inst[1],inst[2],inst[3]);
+                    ret=NewInst(inst[0],inst[1],inst[2],inst[3]);
                 }
                 else if(inst.size()<nbArg)
                 {
@@ -3355,8 +3667,12 @@ void Instruction::compile()
                 {
                     Erreur("Erreur:Trop d'arguments dans NewInst",context);
                 }
+                if(ret!=NULL)
+                {
+                    newInst.push_back(ret);
+                }
             }
-            cout<<"fin "<<type<<endl;
+            //cout<<"fin "<<type<<endl;
         }
         else if(type.compare(NewType_)==0)
         {
@@ -3546,7 +3862,7 @@ void Instruction::compile()
                    }
                }
                arg2=crt.substr(i+1,l-2);
-               Vargen* ret=Cro(new Instruction(name+"_"+type+"_1",arg1,newArg,varDb),new Instruction(name+"_"+type+"_num",arg2,newArg,varDb));
+               Vargen* ret=Cro(new Instruction(name+"_"+type+"_1",arg1,arg,varDb),new Instruction(name+"_"+type+"_num",arg2,arg,varDb));
                if(ret!=NULL)
                {
                    retour.clear();
@@ -3680,7 +3996,7 @@ void Instruction::compile()
                         crt=crt.substr(0,size-1);
                     }
                 }
-                ManageStream(crt,'>',varDb);
+                ManageStream(crt,'>',arg,varDb);
             }
         }
         else if(type.compare(Out_)==0)
@@ -3697,7 +4013,7 @@ void Instruction::compile()
                        crt=crt.substr(0,size-1);
                    }
                }
-               ManageStream(crt,'<',varDb);
+               ManageStream(crt,'<',arg,varDb);
             }
 
         }
@@ -3716,9 +4032,9 @@ void Instruction::compile()
                    }
                }
                unsigned int i=indexInString2(nameOp,crt);
-               string arg=crt.substr(i+nameOp.size());
+               string arg1=crt.substr(i+nameOp.size());
                //cout<<"arg="<<arg<<endl;
-               Vargen* ret=Neg(new Instruction(name+"_Neg_"+"0",arg,newArg,varDb));
+               Vargen* ret=Neg(new Instruction(name+"_Neg_"+"0",arg1,arg,varDb));
                if(ret!=NULL)
                {
                    retour.clear();
@@ -3751,7 +4067,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                Vargen* ret=Or(new Instruction(name+"_Or_"+"g",arg1,newArg,varDb),new Instruction(name+"_Or_"+"d",arg2,newArg,varDb));
+                Vargen* ret=Or(new Instruction(name+"_Or_"+"g",arg1,arg,varDb),new Instruction(name+"_Or_"+"d",arg2,arg,varDb));
                 if(ret!=NULL)
                 {
                     retour.clear();
@@ -3783,7 +4099,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                Vargen* ret=And(new Instruction(name+"_And_"+"g",arg1,newArg,varDb),new Instruction(name+"_And_"+"d",arg2,newArg,varDb));
+                Vargen* ret=And(new Instruction(name+"_And_"+"g",arg1,arg,varDb),new Instruction(name+"_And_"+"d",arg2,arg,varDb));
                 if(ret!=NULL)
                 {
                     retour.clear();
@@ -3799,7 +4115,7 @@ void Instruction::compile()
         }
         else if(type.compare(Plus_)==0)
         {
-            //cout<<"compile: "<<type<<endl;
+            cout<<"compile: "<<type<<endl;
             if(cont.size()==1)
             {
                 string crt=cont[0];
@@ -3817,7 +4133,8 @@ void Instruction::compile()
                 //cout<<arg1<<endl;
                 string arg2=crt.substr(i+nameOp.size());
                 //cout<<arg2<<endl;
-                Vargen* ret=Plus(new Instruction(name+"_Plus_"+"g",arg1,newArg,varDb),new Instruction(name+"_Plus_"+"d",arg2,newArg,varDb));
+                //cout<<"arg.size= "<<arg.size()<<endl;
+                Vargen* ret=Plus(new Instruction(name+"_Plus_"+"g",arg1,arg,varDb),new Instruction(name+"_Plus_"+"d",arg2,arg,varDb));
                 if(ret!=NULL)
                 {
                     retour.clear();
@@ -3849,7 +4166,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                Vargen* ret=SupEqual(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                Vargen* ret=SupEqual(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
                 if(ret!=NULL)
                 {
                     retour.clear();
@@ -3881,7 +4198,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                Vargen* ret=Sup(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                Vargen* ret=Sup(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
                 if(ret!=NULL)
                 {
                     retour.clear();
@@ -3913,7 +4230,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                Vargen* ret=InfEqual(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                Vargen* ret=InfEqual(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
                 if(ret!=NULL)
                 {
                     retour.clear();
@@ -3945,7 +4262,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                Vargen* ret=Inf(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                Vargen* ret=Inf(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
                 if(ret!=NULL)
                 {
                     retour.clear();
@@ -3977,7 +4294,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                Vargen* ret=Equal(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                Vargen* ret=Equal(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
                 if(ret!=NULL)
                 {
                     retour.clear();
@@ -4009,7 +4326,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                Vargen* ret=Diff(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                Vargen* ret=Diff(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
                 if(ret!=NULL)
                 {
                     retour.clear();
@@ -4041,7 +4358,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                PlusEqual(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                PlusEqual(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
             }
         }
         else if(type.compare(MoinsEqual_)==0)
@@ -4062,7 +4379,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                MoinsEqual(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                MoinsEqual(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
 
             }
         }
@@ -4084,7 +4401,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                Vargen* ret=Moins(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                Vargen* ret=Moins(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
                 if(ret!=NULL)
                 {
                     retour.clear();
@@ -4116,7 +4433,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                MultEqual(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                MultEqual(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
 
             }
         }
@@ -4138,7 +4455,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                Vargen* ret=Mult(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                Vargen* ret=Mult(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
                 if(ret!=NULL)
                 {
                     retour.clear();
@@ -4170,7 +4487,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                DivEqual(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                DivEqual(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
 
             }
         }
@@ -4192,7 +4509,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                Vargen* ret=Div(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                Vargen* ret=Div(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
                 if(ret!=NULL)
                 {
                     retour.clear();
@@ -4224,7 +4541,7 @@ void Instruction::compile()
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
                 string arg2=crt.substr(i+nameOp.size());
-                Vargen* ret=Reste(new Instruction(name+"_"+type+"_"+"g",arg1,newArg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,newArg,varDb));
+                Vargen* ret=Reste(new Instruction(name+"_"+type+"_"+"g",arg1,arg,varDb),new Instruction(name+"_"+type+"_"+"d",arg2,arg,varDb));
                 if(ret!=NULL)
                 {
                     retour.clear();
@@ -4256,6 +4573,7 @@ void Instruction::compile()
                 string crt=cont[0];
                 string argFun=crt.substr(type.size());
                 vector<Vargen*> argMeth=varInString(argFun);
+                //cout<<"Avant makeInst, arg.size="<<argMeth.size()<<endl;
                 vector<Vargen*> ret=makeInstruction(type,argMeth,arg,varDb);
                 retour=ret;
             }
@@ -4327,11 +4645,11 @@ void Instruction::print()
     {
         if(k!=retourT.size()-1)
         {
-            cout<<"Arg["<<k<<"]="<<argT[k]->name<<", ";
+            cout<<"Arg["<<k<<"]="<<retourT[k]->name<<", ";
         }
         else
         {
-            cout<<"Arg["<<k<<"]="<<argT[k]->name<<endl;
+            cout<<"Arg["<<k<<"]="<<retourT[k]->name<<endl;
         }
     }
     if(retourT.size()==0)
@@ -4353,8 +4671,40 @@ void Instruction::print()
 Instruction::Instruction(const Instruction& orig) {
 }
 
+
+/*
+ * retire l'instruction de la bdd
+ */
+void Instruction::deleteInst()
+{
+    if(tmp)
+    {
+        string argTS="";
+        unsigned int k;
+        for(k=0;k<arg.size();k++)
+        {
+            argTS+=arg[k]->name;
+            argTS+=";";
+        }
+        string id=getIdInstruction(name,argTS);
+        string req="delete from instruction where ins_id="+id+";";
+        memory->insert(req);
+    }
+}
+
+
+
+
 Instruction::~Instruction() {
     //cout<<"delete "<<name<<endl;
+
+    /*while(arg.size()>0)
+    {
+        unsigned int size=arg.size();
+        arg[size-1]->deleteVar();
+        delete arg[size-1];
+        arg.pop_back();
+    }*/
     arg.clear();
     while(argT.size()>0)
     {
@@ -4374,13 +4724,17 @@ Instruction::~Instruction() {
         DbVar* last=varDb[size-1];
         delete last;
         varDb.pop_back();
+        context=varDb;
     }
     retour.clear();
-    /*while(retour.size()>0)
+    while(newInst.size()>0)
     {
-        unsigned int size=retour.size();
-        delete retour[size-1];
-        retour.pop_back();
-    }*/
+        unsigned int size=newInst.size();
+        Instruction* actualInst=newInst[size-1];
+        //cout<<"delete inst: "<<actualInst->name<<endl;
+        actualInst->deleteInst();
+        delete actualInst;
+        newInst.pop_back();
+    }
 }
 

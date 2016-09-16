@@ -55,6 +55,7 @@ public:
     void setValuesIn(std::vector<Vargen*> in);
 
     void print();
+    void deleteInst();
     Instruction(const Instruction& orig);
     virtual ~Instruction();
 private:
