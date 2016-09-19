@@ -22,7 +22,7 @@ class Instruction {
 public:
     Instruction(std::string id);
     Instruction(std::string _name,std::string _cont,std::vector<Vargen*> _arg,std::vector<DbVar*> _var);
-    Instruction(std::string name,std::string argS, std::string retourS, std::string inst, bool tmp=true, unsigned int prior=2, std::string _assoc="droite", bool _isOp=false);
+    Instruction(std::string name,std::string argS, std::string retourS, std::string inst, std::vector<DbVar*> dbVar_, bool tmp=true, unsigned int prior=2, std::string _assoc="droite", bool _isOp=false);
 
     //Attributs
     std::string name;
@@ -64,6 +64,7 @@ private:
 
 
 std::string setArgInString(std::string brut, std::vector<Vargen*> arg);
+std::string recopieString(std::string s);
 
 std::vector<std::string> getArg(std::string s, char sep, unsigned int numPar_=1);
 bool isWellPar(std::string s, unsigned int _nbFun=0);
@@ -81,7 +82,7 @@ Vargen* Return(Instruction* inst);
 std::vector<Vargen*> makeInstruction(std::string nameInst, std::vector<Vargen*> _arg, std::vector<Vargen*> exArg, std::vector<DbVar*> _varDb, Vargen* var=NULL);
 Vargen* NewVar(std::string name, std::string type, std::vector<Vargen*> funArg, std::vector<DbVar*> _varDb, std::string arg="", bool tmp=true);
 void deleteVar(std::string name, std::vector<DbVar*> _varDb);
-Instruction* NewInst(Instruction* name,Instruction* argS, Instruction* retourS, Instruction* inst, Instruction* tmp=NULL, Instruction* prior=NULL, Instruction* _assoc=NULL, Instruction* _isOp=NULL);
+Instruction* NewInst(Instruction* name,Instruction* argS, Instruction* retourS, Instruction* inst, std::vector<DbVar*> varDb_, Instruction* tmp=NULL, Instruction* prior=NULL, Instruction* _assoc=NULL, Instruction* _isOp=NULL);
 void newType(std::string name, std::string desc, std::string cont, std::string meth);
 void addAtt(std::string nameType, std::string nameAtt, std::string typeAtt);
 void addMeth(std::string nameType, std::string nameMeth);

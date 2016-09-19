@@ -2274,12 +2274,14 @@ void deleteString(string s)
  * Constructeur d'ajout de l'instruction à la bdd
  * argS: string décrivant les types d'argument: "name1:type1;name2:type2;...;"
  * retourS: string décrivant les types de retour: "type1;type2;"
+ *
 */
-Instruction::Instruction(string _name, string argS, string retourS, string inst, bool tmp_, unsigned int _prior, string _assoc, bool _isOp) {
+Instruction::Instruction(string _name, string argS, string retourS, string inst, vector<DbVar*> varDb_, bool tmp_, unsigned int _prior, string _assoc, bool _isOp) {
     name=_name;    
     isOp=_isOp;
     //cout<<"retourS="<<retourS<<endl;
     string retourS2=recopieString(retourS);
+    varDb=varDb_;
     initType();
     //cout<<"retourS="<<retourS<<endl;
     tmp=tmp_;
@@ -2310,35 +2312,38 @@ Instruction::Instruction(string _name, string argS, string retourS, string inst,
         //cout<<"avant preCompile"<<endl;
         preCompile(inst);
         //cout<<"après preCompile"<<endl;
+        unsigned int size=varDb.size();
+        if(size>2)
+        {
+            char priorStr[4];
+            sprintf(priorStr,"%d",prior);
+            string priorS=priorStr;
 
-        char priorStr[4];
-        sprintf(priorStr,"%d",prior);
-        string priorS=priorStr;
+            Vargen* nameVar=new Vargen(name,"string",name);
+            varDb[size-2]->insert(nameVar);
+            string nameId=getIdString(name);
 
-        Vargen* nameVar=new Vargen(name,"string",name);
-        delete nameVar;
-        string nameId=getIdString(name);
+            Vargen* argSvar=new Vargen(argStr,"string",argStr);
+            varDb[size-2]->insert(argSvar);
+            string argTId=getIdString(argStr);
 
-        Vargen* argSvar=new Vargen(argStr,"string",argStr);
-        delete argSvar;
-        string argTId=getIdString(argStr);
+            Vargen* retourSvar=new Vargen(retourS2,"string",retourS2);
+            varDb[size-2]->insert(retourSvar);
+            string retourId=getIdString(retourS2);
 
-        Vargen* retourSvar=new Vargen(retourS2,"string",retourS2);
-        delete retourSvar;
-        string retourId=getIdString(retourS2);
+            Vargen* instvar=new Vargen(brut,"string",brut);
+            varDb[size-2]->insert(instvar);
+            string instId=getIdString(brut);
 
-        Vargen* instvar=new Vargen(brut,"string",brut);
-        delete instvar;
-        string instId=getIdString(brut);
+            Vargen* assocVar=new Vargen(assoc,"string",assoc);
+            varDb[size-2]->insert(assocVar);
+            string assocId=getIdString(assoc);
 
-        Vargen* assocVar=new Vargen(assoc,"string",assoc);
-        delete assocVar;
-        string assocId=getIdString(assoc);
-
-        string isOpS=(isOp? "true" : "false");
-        string req="insert into instruction(name,argT,retourT,cont,prior,assoc,isOp) values("+nameId+","+argTId+","+retourId+","+instId+","+priorS+","+assocId+","+isOpS+");";
-        //cout<<"requete inst:"<<req<<endl;
-        memory->insert(req);
+            string isOpS=(isOp? "true" : "false");
+            string req="insert into instruction(name,argT,retourT,cont,prior,assoc,isOp) values("+nameId+","+argTId+","+retourId+","+instId+","+priorS+","+assocId+","+isOpS+");";
+            //cout<<"requete inst:"<<req<<endl;
+            memory->insert(req);
+        }
 
     }
     else
@@ -2591,30 +2596,38 @@ string getIdInstruction(string name, string argT, string retourT)
 {
     string id="";
     string nameId=getIdString(name);
+    if(nameId.compare("")==0)
+    {
+        storeString(name);
+        nameId=getIdString(name);
+    }
     //cout<<"nameId="<<nameId<<endl;
-    if(argT.compare("")!=0)
+    if(argT.compare("")!=0 && nameId.compare("")!=0)
     {
         string argTId=getIdString(argT);
-        if(retourT.compare("")!=0)
+        if(retourT.compare("")!=0 && argTId.compare("")!=0)
         {
             string retourTId=getIdString(retourT);
-            string req="select ins_id from instruction where name="+nameId+" and argT="+argTId+" and retourT="+retourTId+";";
-            MYSQL_RES* res=memory->request(req);
-            if(res!=NULL)
+            if(retourTId.compare("")!=0)
             {
-               MYSQL_ROW row;
-               if(row=mysql_fetch_row(res))
-               {
-                   id=(row[0]? row[0]:"");
-               }
-               else
-               {
-                   //cout<<"l'instruction ("<<retourT<<") "<<name<<"("+argT+") n'existe pas"<<endl;
-               }
-            }
-            else
-            {
-                cout<<"Erreur requete sql: "<<req<<endl;
+                string req="select ins_id from instruction where name="+nameId+" and argT="+argTId+" and retourT="+retourTId+";";
+                MYSQL_RES* res=memory->request(req);
+                if(res!=NULL)
+                {
+                   MYSQL_ROW row;
+                   if(row=mysql_fetch_row(res))
+                   {
+                       id=(row[0]? row[0]:"");
+                   }
+                   else
+                   {
+                       //cout<<"l'instruction ("<<retourT<<") "<<name<<"("+argT+") n'existe pas"<<endl;
+                   }
+                }
+                else
+                {
+                    cout<<"Erreur requete sql: "<<req<<endl;
+                }
             }
         }
         else
@@ -2777,7 +2790,7 @@ vector<string> getArg(string s, char sep, unsigned int numPar_)
 /*
  * si s=(arg1,arg2,...) return [Instruction(arg1)]::...
  */
-vector<Instruction*> subInst(string s,string nameInst,vector<Vargen*> arg)
+vector<Instruction*> subInst(string s,string nameInst,vector<Vargen*> arg, vector<DbVar*> varDb)
 {
     vector<Instruction*> ret;
     vector<string> retStr=getArg(s,',');
@@ -2787,7 +2800,7 @@ vector<Instruction*> subInst(string s,string nameInst,vector<Vargen*> arg)
         char kStr[4];
         sprintf(kStr,"%d",k);
         string kS=kStr;
-        ret.push_back(new Instruction(nameInst+kS,retStr[k],arg,context));
+        ret.push_back(new Instruction(nameInst+kS,retStr[k],arg,varDb));
 
     }
     return ret;
@@ -3153,7 +3166,7 @@ string instInString(string s)
 /*
  * si s=(var1,var2,...) return [var1]::[var2]::...
  */
-vector<Vargen*> varInString(string s)
+vector<Vargen*> varInString(string s, vector<DbVar*> varDb_)
 {
     vector<Vargen*> ret;
     unsigned int k;
@@ -3211,7 +3224,7 @@ vector<Vargen*> varInString(string s)
             {
                 if(tmpVar.compare("")!=0)
                 {
-                    Instruction* inst=new Instruction("var",tmpVar,newArg,context);
+                    Instruction* inst=new Instruction("var",tmpVar,newArg,varDb_);
                     inst->compile();
                     if(inst->retour.size()==1)
                     {
@@ -3245,8 +3258,8 @@ vector<Vargen*> varInString(string s)
             {
                 if(tmpVar.compare("")!=0)
                 {
-                    Instruction* inst=new Instruction("var",tmpVar,newArg,context);
-                    cout<<"toCompile"<<endl;
+                    Instruction* inst=new Instruction("var",tmpVar,newArg,varDb_);
+                    //cout<<"toCompile"<<endl;
                     inst->compile();
                     if(inst->retour.size()==1)
                     {
@@ -3353,7 +3366,7 @@ void Instruction::compile()
                         if(ret!=NULL)
                         {
                             vector<Vargen*> exit;
-                            ret->print();
+                            //ret->print();
                             exit.push_back(ret);
                             retour=exit;
                         }
@@ -3566,7 +3579,7 @@ void Instruction::compile()
                                 //ret->print();
                                 retour.clear();
                                 vector<Vargen*> exit;
-                                exit.push_back(ret);
+                                exit.push_back(new Vargen(ret));
                                 retour=exit;
                             }
                             else
@@ -3581,7 +3594,7 @@ void Instruction::compile()
                         if(ret!=NULL)
                         {
                             vector<Vargen*> exit;
-                            exit.push_back(ret);
+                            exit.push_back(new Vargen(ret));
                             retour=exit;
                         }
                         else
@@ -3599,7 +3612,7 @@ void Instruction::compile()
             {
                string crt=cont[0];
                crt=crt.substr(7);
-               cout<<"arg.size= "<<arg.size()<<endl;
+               //cout<<"arg.size= "<<arg.size()<<endl;
                Vargen* var=Return(new Instruction("Return_"+name,crt,arg,varDb));
                Retour(var,varDb);
             }
@@ -3635,29 +3648,29 @@ void Instruction::compile()
                 int nbArg=4;
                 string crt=cont[0];
                 crt=crt.substr(6);
-                vector<Instruction*> inst=subInst(crt,name,arg);
+                vector<Instruction*> inst=subInst(crt,name,arg,varDb);
                 Instruction* ret=NULL;
                 if(inst.size()==nbArg+4)
                 {
-                    ret=NewInst(inst[0],inst[1],inst[2],inst[3],inst[4],inst[5],inst[6],inst[7]);
+                    ret=NewInst(inst[0],inst[1],inst[2],inst[3],varDb,inst[4],inst[5],inst[6],inst[7]);
 
                 }
                 else if(inst.size()==nbArg+3)
                 {
-                    ret=NewInst(inst[0],inst[1],inst[2],inst[3],inst[4],inst[5],inst[6]);
+                    ret=NewInst(inst[0],inst[1],inst[2],inst[3],varDb,inst[4],inst[5],inst[6]);
 
                 }
                 else if(inst.size()==nbArg+2)
                 {
-                    ret=NewInst(inst[0],inst[1],inst[2],inst[3],inst[4],inst[5]);
+                    ret=NewInst(inst[0],inst[1],inst[2],inst[3],varDb,inst[4],inst[5]);
                 }
                 else if(inst.size()==nbArg+1)
                 {
-                    ret=NewInst(inst[0],inst[1],inst[2],inst[3],inst[4]);
+                    ret=NewInst(inst[0],inst[1],inst[2],inst[3],varDb,inst[4]);
                 }
                 else if(inst.size()==nbArg)
                 {
-                    ret=NewInst(inst[0],inst[1],inst[2],inst[3]);
+                    ret=NewInst(inst[0],inst[1],inst[2],inst[3],varDb);
                 }
                 else if(inst.size()<nbArg)
                 {
@@ -3670,6 +3683,13 @@ void Instruction::compile()
                 if(ret!=NULL)
                 {
                     newInst.push_back(ret);
+                }
+                int j;
+                for(j=inst.size()-1;j>=0;j--) //
+                {
+                    Instruction* crtInst=inst[j];
+                    delete crtInst;
+                    inst.pop_back();
                 }
             }
             //cout<<"fin "<<type<<endl;
@@ -3925,7 +3945,7 @@ void Instruction::compile()
                       if(fun.compare("")!=0)
                       {
                           string argFun=crt.substr(j+fun.size());
-                          vector<Vargen*> argMeth=varInString(argFun);
+                          vector<Vargen*> argMeth=varInString(argFun,varDb);
                           vector<Vargen*> ret=makeInstruction(fun,argMeth,arg,varDb,var1);
                           retour=ret;
                       }
@@ -4572,7 +4592,7 @@ void Instruction::compile()
             {
                 string crt=cont[0];
                 string argFun=crt.substr(type.size());
-                vector<Vargen*> argMeth=varInString(argFun);
+                vector<Vargen*> argMeth=varInString(argFun,varDb);
                 //cout<<"Avant makeInst, arg.size="<<argMeth.size()<<endl;
                 vector<Vargen*> ret=makeInstruction(type,argMeth,arg,varDb);
                 retour=ret;
@@ -4686,6 +4706,7 @@ void Instruction::deleteInst()
             argTS+=arg[k]->name;
             argTS+=";";
         }
+        //cout<<"delete de l'instruction "<<name<<endl;
         string id=getIdInstruction(name,argTS);
         string req="delete from instruction where ins_id="+id+";";
         memory->insert(req);
@@ -4726,7 +4747,15 @@ Instruction::~Instruction() {
         varDb.pop_back();
         context=varDb;
     }
-    retour.clear();
+    while(retour.size()>0)
+    {
+       Vargen* var=retour.back();
+       //cout<<"delete retour, name="<<var->name<<endl;
+       var->deleteVar();
+       delete var;
+       retour.pop_back();
+    }
+    //retour.clear();
     while(newInst.size()>0)
     {
         unsigned int size=newInst.size();

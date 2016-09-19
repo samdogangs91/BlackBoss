@@ -33,6 +33,7 @@ bool isBasic(std::string);
 class Type
 {
 public:
+    Type(Type* type);
     Type(std::string _name,bool estBasic=false);
     Type(std::string _name, std::string _desc,std::string _cont, std::string _meth);
     Type(std::string container, std::string content);

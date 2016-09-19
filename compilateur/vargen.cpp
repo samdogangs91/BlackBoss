@@ -325,7 +325,7 @@ Vargen::Vargen(Vargen *var)
 {
     name=var->name;
     ok=var->ok;
-    type=var->type;
+    type=new Type(var->type);
     if(isBasic(type->name))
     {
         string _type=type->name;
@@ -800,16 +800,49 @@ void Vargen::deleteVar()
 {
     if(!isBasic(type->name) && tmp)
     {
-        if(type->cont.size()>0)
+        if(context.size()>1)
         {
-            string req="delete from "+type->name+" where "+type->cont[0]->name+"="+name+";";
-            memory->insert(req);
+            bool okDelete=true;
+            unsigned int k;
+            for(k=0;k<context.size()-1;k++)
+            {
+                Vargen* crtVar=context[k]->find(name);
+                okDelete=(crtVar==NULL);
+                if(!okDelete)
+                {
+                    break;
+                }
+            }
+            if(okDelete)
+            {
+                if(type->cont.size()>0)
+                {
+                    string req="delete from "+type->name+" where "+type->cont[0]->name+"="+name+";";
+                    memory->insert(req);
+                }
+                else if(type->name.compare(stringType)==0)
+                {
+                    string id=getIdString(valStr);
+                    //cout<<"delete string "<<valStr<<endl;
+                    string req="delete from list_char where list_char_id="+id+";";
+                    memory->insert(req);
+                }
+            }
         }
-        else if(type->name.compare(stringType)==0)
+        else
         {
-            string id=getIdString(valStr);
-            string req="delete from list_char where list_char_id="+id+";";
-            memory->insert(req);
+            if(type->cont.size()>0)
+            {
+                string req="delete from "+type->name+" where "+type->cont[0]->name+"="+name+";";
+                memory->insert(req);
+            }
+            else if(type->name.compare(stringType)==0)
+            {
+                string id=getIdString(valStr);
+                //cout<<"delete string "<<valStr<<endl;
+                string req="delete from list_char where list_char_id="+id+";";
+                memory->insert(req);
+            }
         }
     }
     //~Vargen();

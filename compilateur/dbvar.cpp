@@ -74,6 +74,7 @@ DbVar::~DbVar()
     for(it=cont.begin();it!=cont.end();it++)
     {
         Vargen* var=it->second;
+        //cout<<"delete de "<<var->name<<endl;
         if(var->tmp)
         {
             var->deleteVar();

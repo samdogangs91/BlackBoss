@@ -17,15 +17,24 @@ int main(int argc, char *argv[])
     string s5="NewVar(x,int);cout<<\"Quel age as tu?\"<<endl;cin>>x;cout<<\"Vous avez \"<<x<<\" ans\"<<endl";
     string s6="NewInst(\"Reste\",\"x:int;y:int;\",\"int;\",\"Return x%y;\");Return Reste(16,4);";
     string s7="NewVar(x,int);NewVar(y,int);x=10;y=2;Return x/y;";
+    string s8="NewVar(k,int);For(k=0;k<5;k++;(cout<<\"lol\"<<endl;););";
 
     vector<Vargen*> arg;
-    Instruction* inst=new Instruction("Inst",s6,arg,db);
-    inst->compile();
-    unsigned int k;
-    for(k=0;k<inst->retour.size();k++)
+    cout<<s8<<endl;
+    while(1)
     {
-        inst->retour[k]->print();
+        cout<<"Donnez une instruction à compiler"<<endl;
+        string s;
+        getline(cin,s);
+        Instruction* inst=new Instruction("Inst",s,arg,db);
+        inst->compile();
+        unsigned int k;
+        for(k=0;k<inst->retour.size();k++)
+        {
+            inst->retour[k]->print();
+        }
+        delete inst;
+        cout<<"_____________________________________________"<<endl;
     }
-    delete inst;    
     return 0;
 }

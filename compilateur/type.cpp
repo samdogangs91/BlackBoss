@@ -97,6 +97,15 @@ vector<Instruction*> makeMeth(string cont)
 }
 
 
+Type::Type(Type *type)
+{
+    name=type->name;
+    cont=type->cont;
+    desc=type->desc;
+    meth=type->meth;
+}
+
+
 /*
  * Ce constructeur sert à rechercher les types dans la bdd
  */

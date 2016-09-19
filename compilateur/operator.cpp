@@ -92,14 +92,14 @@ Vargen* identity(std::string cont, vector<Vargen*> arg, vector<DbVar*> varDb)
            int size=cont.size();
            string s=cont.substr(1,size-2);
            ret=new Vargen(s,stringType,s);
-           int sizeTmp=varDb.size();
+           int sizeTmp=context.size();
            if(sizeTmp>1)
            {
-               varDb[sizeTmp-2]->insert(ret);
+               context[sizeTmp-2]->insert(ret);
            }
            else
            {
-               varDb[sizeTmp-1]->insert(ret);
+               context[sizeTmp-1]->insert(ret);
            }
            return ret;
        }
@@ -135,6 +135,7 @@ Vargen* Return(Instruction* inst)
 {
     Vargen* ret=NULL;
     inst->compile();
+    //cout<<"fin compile "<<inst->type<<endl;
     if(inst->retour.size()==1)
     {
         ret=new Vargen(inst->retour[0]);
@@ -203,7 +204,7 @@ void deleteVar(string name, vector<DbVar*> varDb)
 }
 
 
-Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS_, Instruction* inst_,Instruction* tmp_, Instruction* prior_, Instruction* assoc_, Instruction* isOp_)
+Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS_, Instruction* inst_, vector<DbVar*> varDb_, Instruction* tmp_, Instruction* prior_, Instruction* assoc_, Instruction* isOp_)
 {
     bool okName=false;
     bool okArg=false;
@@ -229,14 +230,26 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         if(name_->retour.size()==1)
         {
             Vargen* var=name_->retour[0];
-            if(var->type->name.compare(stringType)==0)
+            if(var!=NULL)
             {
-                okName=true;
-                name=var->valStr;
+                unsigned int size=varDb_.size();
+                if(size>1)
+                {
+                    varDb_[size-2]->insert(new Vargen(var));
+                }
+                if(var->type->name.compare(stringType)==0)
+                {
+                    okName=true;
+                    name=recopieString(var->valStr);
+                }
+                else
+                {
+                    Erreur("l'argument name de NewInst n'est pas de type string",context);
+                }
             }
             else
             {
-                Erreur("l'argument name de NewInst n'est pas de type string",context);
+
             }
         }
         else
@@ -257,14 +270,26 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         if(argS_->retour.size()==1)
         {
             Vargen* var=argS_->retour[0];
-            if(var->type->name.compare(stringType)==0)
+            if(var!=NULL)
             {
-                okArg=true;
-                argS=var->valStr;
+                unsigned int size=varDb_.size();
+                if(size>1)
+                {
+                    varDb_[size-2]->insert(new Vargen(var));
+                }
+                if(var->type->name.compare(stringType)==0)
+                {
+                    okArg=true;
+                    argS=var->valStr;
+                }
+                else
+                {
+                    Erreur("l'argument argS de NewInst n'est pas de type string",context);
+                }
             }
             else
             {
-                Erreur("l'argument argS de NewInst n'est pas de type string",context);
+
             }
         }
         else
@@ -285,14 +310,26 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         if(retourS_->retour.size()==1)
         {
             Vargen* var=retourS_->retour[0];
-            if(var->type->name.compare(stringType)==0)
+            if(var!=NULL)
             {
-                okRetour=true;
-                retourS=var->valStr;
+                unsigned int size=varDb_.size();
+                if(size>1)
+                {
+                    varDb_[size-2]->insert(new Vargen(var));
+                }
+                if(var->type->name.compare(stringType)==0)
+                {
+                    okRetour=true;
+                    retourS=var->valStr;
+                }
+                else
+                {
+                    Erreur("l'argument argS de NewInst n'est pas de type string",context);
+                }
             }
             else
             {
-                Erreur("l'argument argS de NewInst n'est pas de type string",context);
+
             }
         }
         else
@@ -312,14 +349,26 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         if(inst_->retour.size()==1)
         {
             Vargen* var=inst_->retour[0];
-            if(var->type->name.compare(stringType)==0)
+            if(var!=NULL)
             {
-                okInst=true;
-                inst=var->valStr;
+                unsigned int size=varDb_.size();
+                if(size>1)
+                {
+                    varDb_[size-2]->insert(new Vargen(var));
+                }
+                if(var->type->name.compare(stringType)==0)
+                {
+                    okInst=true;
+                    inst=var->valStr;
+                }
+                else
+                {
+                    Erreur("l'argument inst de NewInst n'est pas de type string",context);
+                }
             }
             else
             {
-                Erreur("l'argument inst de NewInst n'est pas de type string",context);
+
             }
         }
         else
@@ -339,14 +388,22 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         if(tmp_->retour.size()==1)
         {
             Vargen* var=tmp_->retour[0];
-            if(var->type->name.compare(boolType)==0)
+            if(var!=NULL)
             {
-                okTmp=true;
-                tmp=var->valBool;
-            }
-            else
-            {
-                Erreur("l'argument tmp de NewInst n'est pas de type bool",context);
+                unsigned int size=varDb_.size();
+                if(size>1)
+                {
+                    varDb_[size-2]->insert(new Vargen(var));
+                }
+                if(var->type->name.compare(boolType)==0)
+                {
+                    okTmp=true;
+                    tmp=var->valBool;
+                }
+                else
+                {
+                    Erreur("l'argument tmp de NewInst n'est pas de type bool",context);
+                }
             }
         }
         else
@@ -362,21 +419,33 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         if(prior_->retour.size()==1)
         {
             Vargen* var=prior_->retour[0];
-            if(var->type->name.compare(intType)==0)
+            if(var!=NULL)
             {
-                prior=var->valInt;
-                if(prior>0 && prior<16)
+                unsigned int size=varDb_.size();
+                if(size>1)
                 {
-                   okPrior=true;
+                    varDb_[size-2]->insert(new Vargen(var));
+                }
+                if(var->type->name.compare(intType)==0)
+                {
+                    prior=var->valInt;
+                    if(prior>0 && prior<16)
+                    {
+                       okPrior=true;
+                    }
+                    else
+                    {
+                       Erreur("l'argument prior de l'instruction doit etre compris entre 0 et 15",context);
+                    }
                 }
                 else
                 {
-                   Erreur("l'argument prior de l'instruction doit etre compris entre 0 et 15",context);
+                    Erreur("l'argument prior de NewInst n'est pas de type int",context);
                 }
             }
             else
             {
-                Erreur("l'argument prior de NewInst n'est pas de type int",context);
+
             }
         }
         else
@@ -392,10 +461,15 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         if(assoc_->retour.size()==1)
         {
             Vargen* var=assoc_->retour[0];
+            unsigned int size=varDb_.size();
+            if(size>1)
+            {
+                varDb_[size-2]->insert(new Vargen(var));
+            }
             if(var->type->name.compare(stringType)==0)
             {
                 assoc=var->valStr;
-                okAssoc=(assoc.compare("gauche")==0)||(assoc.compare("droite")==0);
+                okAssoc=(assoc.compare("gauche")==0)||(assoc.compare("droite")==0);                
                 if(!okAssoc)
                 {
                    Erreur("l'argument assoc vaut soit 'gauche' soit 'droite'",context);
@@ -419,6 +493,11 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
         if(isOp_->retour.size()==1)
         {
             Vargen* var=isOp_->retour[0];
+            unsigned int size=varDb_.size();
+            if(size>1)
+            {
+                varDb_[size-2]->insert(new Vargen(var));
+            }
             if(var->type->name.compare(boolType)==0)
             {
                 okIsOp=true;
@@ -439,24 +518,34 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
 
     if(okName && okArg && okRetour && okInst && okTmp && okPrior && okAssoc && okIsOp)
     {
-        ret=new Instruction(name,argS,retourS,inst,tmp,prior,assoc,isOp);
+        vector<DbVar*> exContext=context;
+        ret=new Instruction(name,argS,retourS,inst,varDb_,tmp,prior,assoc,isOp);
+        context=exContext;
     }
     else if(okName && okArg && okRetour && okInst && okTmp && okPrior && okAssoc)
     {
-        ret=new Instruction(name,argS,retourS,inst,tmp,prior,assoc);
+        vector<DbVar*> exContext=context;
+        ret=new Instruction(name,argS,retourS,inst,varDb_,tmp,prior,assoc);
+        context=exContext;
     }
     else if(okName && okArg && okRetour && okInst && okTmp && okPrior)
     {
-        ret=new Instruction(name,argS,retourS,inst,tmp,prior);
+        vector<DbVar*> exContext=context;
+        ret=new Instruction(name,argS,retourS,inst,varDb_,tmp,prior);
+        context=exContext;
     }
     else if(okName && okArg && okRetour && okInst && okTmp)
     {
-        ret=new Instruction(name,argS,retourS,inst,tmp);
+        vector<DbVar*> exContext=context;
+        ret=new Instruction(name,argS,retourS,inst,varDb_,tmp);
+        context=exContext;
     }
     else if(okName && okArg && okRetour && okInst)
     {
         //cout<<"création de l'instruction "<<name<<endl;
-        ret=new Instruction(name,argS,retourS,inst);
+        vector<DbVar*> exContext=context;
+        ret=new Instruction(name,argS,retourS,inst,varDb_);
+        context=exContext;
         //cout<<"Instruction "<<name<<" créé"<<endl;
     }
     return ret;
@@ -1942,7 +2031,7 @@ vector<Vargen*> makeInstruction(string nameInst, std::vector<Vargen *> _arg, std
     //cout<<"fin de compilation de "<<inst->name<<endl;
     for(k=0;k<inst->retour.size();k++)
     {
-        ret.push_back(inst->retour[k]);
+        ret.push_back(new Vargen(inst->retour[k]));
     }
     //delete inst;
     context=exContext; //mise en place des anciennes variables
