@@ -18,9 +18,10 @@ int main(int argc, char *argv[])
     string s6="NewInst(\"Reste\",\"x:int;y:int;\",\"int;\",\"Return x%y;\");Return Reste(16,4);";
     string s7="NewVar(x,int);NewVar(y,int);x=10;y=2;Return x/y;";
     string s8="NewVar(k,int);For(k=0;k<5;k++;(cout<<\"lol\"<<endl;););";
+    string s9="NewInst(\"Sum\",\"x:int;y:int;z:int;\",\"int;\",\"Return x+y+z;\");Return Sum(1,2,3);";
 
     vector<Vargen*> arg;
-    cout<<s8<<endl;
+    cout<<s9<<endl;
     while(1)
     {
         cout<<"Donnez une instruction à compiler"<<endl;

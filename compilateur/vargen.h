@@ -31,7 +31,7 @@ public:
     int valInt;
     bool valBool;
     char valChar;
-    float valFloat;
+    double valReal;
 
     //Methode manipulant les variables
     void setVal(Vargen* val);

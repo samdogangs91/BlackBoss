@@ -7,7 +7,7 @@ using namespace std;
 extern string intType;
 extern string charType;
 extern string boolType;
-extern string floatType;
+extern string doubleType;
 extern string stringType;
 extern string signalType;
 
@@ -337,9 +337,9 @@ Vargen::Vargen(Vargen *var)
         {
             valChar=var->valChar;
         }
-        else if(_type.compare(floatType)==0)
+        else if(_type.compare(doubleType)==0)
         {
-            valFloat=var->valFloat;
+            valReal=var->valReal;
         }
         else if(_type.compare(boolType)==0)
         {
@@ -387,7 +387,7 @@ string insertIntoList(string _arg)
             string size2Str=size2Tmp;
             if(storeCont.compare(_arg)!=0)
             {
-                cout<<"augmentation de la capacité des string"<<endl;
+                //cout<<"augmentation de la capacité des string"<<endl;
                 string req2="alter table list_char modify cont varchar("+size2Str+");";
                 memory->insert(req2);
                 req2="update list_char set cont=\""+_arg+"\" where list_char_id="+idTmp+";";
@@ -573,17 +573,17 @@ Vargen::Vargen(string _name, string _type, string _arg, bool _tmp)
                     valStr=val;
                     ok=true;
                 }
-                else if(_type.compare("float")==0)
+                else if(_type.compare(doubleType)==0)
                 {
                     delete type;
                     type=new Type(_type,true);
                     char* valTmp=(char*)val.c_str();
-                    int res=sscanf(valTmp,"%f",&valFloat);
+                    int res=sscanf(valTmp,"%lf",&valReal);
                     sscanf(valTmp,"%*[\n]");
                     ok=(res==1);
                     if(!ok)
                     {
-                        valFloat=0;
+                        valReal=0;
                     }
                 }
                 else if(_type.compare(signalType)==0)
@@ -862,15 +862,15 @@ void Vargen::setVal(Vargen *val)
             Erreur("Aucun opérateur = entre "+type->name+" et "+val->type->name,context);
         }
     }
-    else if(type->name.compare(floatType)==0)
+    else if(type->name.compare(doubleType)==0)
     {
         if(val->type->name.compare(intType)==0)
         {
-            valFloat=val->valInt;
+            valReal=val->valInt;
         }
-        else if(val->type->name.compare(floatType)==0)
+        else if(val->type->name.compare(doubleType)==0)
         {
-            valFloat=val->valInt;
+            valReal=val->valInt;
         }
         else
         {
@@ -911,10 +911,10 @@ void Vargen::setVal(Vargen *val)
             sprintf(tmpInt,"%d",val->valInt);
             valStr=tmpInt;
         }
-        else if(val->type->name.compare(floatType)==0)
+        else if(val->type->name.compare(doubleType)==0)
         {
             char tmpFloat[8];
-            sprintf(tmpFloat,"%f",val->valFloat);
+            sprintf(tmpFloat,"%f",val->valReal);
             valStr=tmpFloat;
         }
         else if(val->type->name.compare(stringType)==0)
@@ -957,21 +957,25 @@ void Vargen::print()
     cout<<"->Type: "<<type->name<<endl;
     if(isBasic(type->name)||type->name.compare("string")==0)
     {
-        if(type->name.compare("int")==0)
+        if(type->name.compare(intType)==0)
         {
             cout<<"->val="<<valInt<<endl;
         }
-        else if(type->name.compare("string")==0)
+        else if(type->name.compare(stringType)==0)
         {
             cout<<"->val="<<valStr<<endl;
         }
-        else if(type->name.compare("bool")==0)
+        else if(type->name.compare(boolType)==0)
         {
             cout<<"->val="<<valBool<<endl;
         }
-        else if(type->name.compare("char")==0)
+        else if(type->name.compare(charType)==0)
         {
             cout<<"->val="<<valChar<<endl;
+        }
+        else if(type->name.compare(doubleType)==0)
+        {
+            cout<<"->val="<<valReal<<endl;
         }
 
     }

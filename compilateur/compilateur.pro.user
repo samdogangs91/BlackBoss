@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.1.0, 2016-09-14T00:50:16. -->
+<!-- Written by QtCreator 4.1.0, 2016-09-22T23:17:04. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -54,7 +54,9 @@
  </data>
  <data>
   <variable>ProjectExplorer.Project.PluginSettings</variable>
-  <valuemap type="QVariantMap"/>
+  <valuemap type="QVariantMap">
+   <valuelist type="QVariantList" key="ClangStaticAnalyzer.SuppressedDiagnostics"/>
+  </valuemap>
  </data>
  <data>
   <variable>ProjectExplorer.Project.Target.0</variable>

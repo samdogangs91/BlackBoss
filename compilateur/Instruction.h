@@ -40,6 +40,7 @@ public:
     std::vector<Type*> retourT;//types des variables de sortie
     std::vector<Vargen*> arg; //variables d'entrée
     std::vector<Vargen*> retour; //variables de sortie
+    std::vector<Vargen*> attClass; //Attribut de classe
     std::string type; //Instruction For, If, While, Set ou Program (suite d'instructions)
     std::vector<DbVar*> varDb; //variables des instructions mères et de l'instruction courante
     //DbVar* varTmp; //variables courantes

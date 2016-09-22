@@ -9,7 +9,7 @@ string stringType="string";
 string intType="int";
 string charType="char";
 string boolType="bool";
-string floatType="float";
+string doubleType="double";
 string signalType="signal";
 
 string listType="list";
@@ -34,7 +34,7 @@ string newString(string s)
 
 bool isBasic(string s)
 {
-    return (s.compare(intType)==0)||(s.compare(charType)==0)||(s.compare(boolType)==0)||(s.compare(floatType)==0)||(s.compare(signalType)==0);
+    return (s.compare(intType)==0)||(s.compare(charType)==0)||(s.compare(boolType)==0)||(s.compare(doubleType)==0)||(s.compare(signalType)==0);
 }
 
 vector<Attribut*> makeAtt(string contS) //lis les attributs d'une string codée sous la forme "nameAtt1:typeAtt1;nameAtt2:typeAtt2;..."
@@ -357,7 +357,7 @@ Type::Type(string _name, string _desc, string _cont, string _meth)
 
 Type::Type(string container, string content)
 {
-    cout<<"lol"<<endl;
+    //cout<<"lol"<<endl;
     name=container+"_"+content;
     string req="select name from type where name=\""+name+"\";";
     MYSQL_RES* res=memory->request(req);
@@ -366,7 +366,7 @@ Type::Type(string container, string content)
         MYSQL_ROW row;
         if(row=mysql_fetch_row(res))
         {
-            cout<<"le type "<<name<<" existe déja!"<<endl;
+            //cout<<"le type "<<name<<" existe déja!"<<endl;
         }
         else
         {

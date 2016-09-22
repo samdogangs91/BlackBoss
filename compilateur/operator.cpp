@@ -1,12 +1,13 @@
 #include "Instruction.h"
 #include <fstream>
+#include <sstream>
 
 using namespace std;
 
 extern string intType;
 extern string charType;
 extern string boolType;
-extern string floatType;
+extern string doubleType;
 extern string stringType;
 extern string signalType;
 
@@ -25,6 +26,22 @@ Vargen* identity(std::string cont, vector<Vargen*> arg, vector<DbVar*> varDb)
    //cout<<"dans identity: cont="<<cont<<endl;
    Vargen* ret=NULL;
    char* contC=(char*)cont.c_str();
+   //case double
+   double val;
+   res=sscanf(contC,"%lf",&val);
+   //cout<<"identity: cont="<<cont<<", et val="<<val<<endl;
+   sscanf(contC,"%*[^\n]");
+   if(res==1)
+   {
+      ret=new Vargen(cont,doubleType,cont);
+      int size=varDb.size();
+      if(size>1)
+      {
+          varDb[size-2]->insert(ret);
+      }
+      return ret;
+   }
+
 
    //case int
    res=sscanf(contC,"%d",&nb);
@@ -47,21 +64,6 @@ Vargen* identity(std::string cont, vector<Vargen*> arg, vector<DbVar*> varDb)
    if(res==1)
    {
       ret=new Vargen(cont,charType,cont);
-      int size=varDb.size();
-      if(size>1)
-      {
-          varDb[size-2]->insert(ret);
-      }
-      return ret;
-   }
-
-   //case float
-   float val;
-   res=sscanf(contC,"%f",&val);
-   sscanf(contC,"%*[^\n]");
-   if(res==1)
-   {
-      ret=new Vargen(cont,floatType,cont);
       int size=varDb.size();
       if(size>1)
       {
@@ -125,6 +127,10 @@ Vargen* identity(std::string cont, vector<Vargen*> arg, vector<DbVar*> varDb)
                break;
            }
        }
+   }
+   if(ret==NULL)
+   {
+
    }
 
    return ret;
@@ -722,9 +728,9 @@ bool Equal2(Vargen* var1, Vargen* var2)
         {
             ret=(var1->valInt==var2->valInt);
         }
-        else if(var1->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(doubleType)==0)
         {
-            ret=(var1->valFloat==var2->valFloat);
+            ret=(var1->valReal==var2->valReal);
         }
         else if(var1->type->name.compare(charType)==0)
         {
@@ -834,9 +840,9 @@ Vargen* SupEqual(Instruction* inst1, Instruction* inst2)
             string bStr=(res? "true" : "false");
             ret=new Vargen(var1->name+">="+var2->name,boolType,bStr);
         }
-        else if(var1->type->name.compare(floatType)==0 && var2->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(doubleType)==0 && var2->type->name.compare(doubleType)==0)
         {
-            res=((var1->valFloat)>=(var2->valFloat));
+            res=((var1->valReal)>=(var2->valReal));
             string bStr=(res? "true" : "false");
             ret=new Vargen(var1->name+">="+var2->name,boolType,bStr);
         }
@@ -884,9 +890,9 @@ Vargen* Sup(Instruction* inst1, Instruction* inst2)
             string bStr=(res? "true" : "false");
             ret=new Vargen(var1->name+">"+var2->name,boolType,bStr);
         }
-        else if(var1->type->name.compare(floatType)==0 && var2->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(doubleType)==0 && var2->type->name.compare(doubleType)==0)
         {
-            res=((var1->valFloat)>(var2->valFloat));
+            res=((var1->valReal)>(var2->valReal));
             string bStr=(res? "true" : "false");
             ret=new Vargen(var1->name+">"+var2->name,boolType,bStr);
         }
@@ -934,9 +940,9 @@ Vargen* InfEqual(Instruction* inst1, Instruction* inst2)
             string bStr=(res? "true" : "false");
             ret=new Vargen(var1->name+"<="+var2->name,boolType,bStr);
         }
-        else if(var1->type->name.compare(floatType)==0 && var2->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(doubleType)==0 && var2->type->name.compare(doubleType)==0)
         {
-            res=((var1->valFloat)<=(var2->valFloat));
+            res=((var1->valReal)<=(var2->valReal));
             string bStr=(res? "true" : "false");
             ret=new Vargen(var1->name+"<="+var2->name,boolType,bStr);
         }
@@ -984,9 +990,9 @@ Vargen* Inf(Instruction* inst1, Instruction* inst2)
             string bStr=(res? "true" : "false");
             ret=new Vargen(var1->name+"<"+var2->name,boolType,bStr);
         }
-        else if(var1->type->name.compare(floatType)==0 && var2->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(doubleType)==0 && var2->type->name.compare(doubleType)==0)
         {
-            res=((var1->valFloat)<(var2->valFloat));
+            res=((var1->valReal)<(var2->valReal));
             string bStr=(res? "true" : "false");
             ret=new Vargen(var1->name+"<"+var2->name,boolType,bStr);
         }
@@ -1200,7 +1206,17 @@ void In(std::string stream, Instruction* inst)
     {
         if(inst->retour.size()==1)
         {
-            Vargen* var=inst->retour[0];
+            Vargen* var1=inst->retour[0];
+            unsigned int k;
+            Vargen*var=NULL;
+            for(k=0;k<inst->varDb.size()-1;k++)
+            {
+                var=inst->varDb[k]->find(var1->name);
+                if(var!=NULL)
+                {
+                    break;
+                }
+            }
             if(var==NULL)
             {
                 Erreur("var1 est NULL",context);
@@ -1231,15 +1247,15 @@ void In(std::string stream, Instruction* inst)
                        var->valChar=val;
                     }
                 }
-                else if(var->type->name.compare(floatType)==0)
+                else if(var->type->name.compare(doubleType)==0)
                 {
-                    float val;
+                    double val;
                     char*sTmp=(char*)s.c_str();
                     int res=sscanf(sTmp,"%f",&val);
                     sscanf(sTmp,"%*[^\n]");
                     if(res==1)
                     {
-                       var->valFloat=val;
+                       var->valReal=val;
                     }
                 }
                 else if(var->type->name.compare(stringType)==0)
@@ -1298,15 +1314,15 @@ void In(std::string stream, Instruction* inst)
                            var->valChar=val;
                         }
                     }
-                    else if(var->type->name.compare(floatType)==0)
+                    else if(var->type->name.compare(doubleType)==0)
                     {
-                        float val;
+                        double val;
                         char*sTmp=(char*)s.c_str();
                         int res=sscanf(sTmp,"%f",&val);
                         sscanf(sTmp,"%*[^\n]");
                         if(res==1)
                         {
-                           var->valFloat=val;
+                           var->valReal=val;
                         }
                     }
                     else if(var->type->name.compare(stringType)==0)
@@ -1362,9 +1378,9 @@ void Out(std::string stream, Instruction* inst)
                 {
                     cout<<var->valChar;
                 }
-                else if(type.compare(floatType)==0)
+                else if(type.compare(doubleType)==0)
                 {
-                    cout<<var->valFloat;
+                    cout<<var->valReal;
                 }
                 else if(type.compare(boolType)==0)
                 {
@@ -1395,9 +1411,9 @@ void Out(std::string stream, Instruction* inst)
                     {
                         file<<var->valChar;
                     }
-                    else if(type.compare(floatType)==0)
+                    else if(type.compare(doubleType)==0)
                     {
-                        file<<var->valFloat;
+                        file<<var->valReal;
                     }
                     else if(type.compare(boolType)==0)
                     {
@@ -1488,32 +1504,35 @@ Vargen* Plus(Instruction* inst1, Instruction* inst2)
             string name="plus_"+var1->name+"_"+var2->name;
             ret=new Vargen(name,intType,valS);
         }
-        else if(var1->type->name.compare(floatType)==0 && var2->type->name.compare(intType)==0)
+        else if(var1->type->name.compare(doubleType)==0 && var2->type->name.compare(intType)==0)
         {
-            float val=var1->valFloat+var2->valInt;
-            char valStr[8];
-            sprintf(valStr,"%f",val);
-            string valS=valStr;
+            double val=var1->valReal+var2->valInt;
+            stringstream ss;
+            ss<<val;
+            string valS="";
+            ss>>valS;
             string name="plus_"+var1->name+"_"+var2->name;
-            ret=new Vargen(name,floatType,valS);
+            ret=new Vargen(name,doubleType,valS);
         }
-        else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(doubleType)==0)
         {
-            float val=var1->valInt+var2->valFloat;
-            char valStr[8];
-            sprintf(valStr,"%f",val);
-            string valS=valStr;
+            double val=var1->valInt+var2->valReal;
+            stringstream ss;
+            ss<<val;
+            string valS="";
+            ss>>valS;
             string name="plus_"+var1->name+"_"+var2->name;
-            ret=new Vargen(name,floatType,valS);
+            ret=new Vargen(name,doubleType,valS);
         }
-        else if(var1->type->name.compare(floatType)==0 && var2->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(doubleType)==0 && var2->type->name.compare(doubleType)==0)
         {
-            float val=var1->valFloat+var2->valFloat;
-            char valStr[8];
-            sprintf(valStr,"%f",val);
-            string valS=valStr;
+            double val=var1->valReal+var2->valReal;
+            stringstream ss;
+            ss<<val;
+            string valS="";
+            ss>>valS;
             string name="plus_"+var1->name+"_"+var2->name;
-            ret=new Vargen(name,floatType,valS);
+            ret=new Vargen(name,doubleType,valS);
         }
 
         else if(var1->type->name.compare(charType)==0 && var2->type->name.compare(stringType)==0)
@@ -1555,23 +1574,25 @@ Vargen* Plus(Instruction* inst1, Instruction* inst2)
             string name="plus_"+var1->name+"_"+var2->name;
             ret=new Vargen(name,stringType,s);
         }
-        else if(var1->type->name.compare(floatType)==0 && var2->type->name.compare(stringType)==0)
+        else if(var1->type->name.compare(doubleType)==0 && var2->type->name.compare(stringType)==0)
         {
-            float val=var1->valFloat;
-            char valStr[8];
-            sprintf(valStr,"%f",val);
-            string valS=valStr;
+            double val=var1->valReal;
+            stringstream ss;
+            ss<<val;
+            string valS="";
+            ss>>valS;
             string s=valS;
             s+=var2->valStr;
             string name="plus_"+var1->name+"_"+var2->name;
             ret=new Vargen(name,stringType,s);
         }
-        else if(var1->type->name.compare(stringType)==0 && var2->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(stringType)==0 && var2->type->name.compare(doubleType)==0)
         {
-            float val=var2->valFloat;
-            char valStr[8];
-            sprintf(valStr,"%f",val);
-            string valS=valStr;
+            double val=var2->valReal;
+            stringstream ss;
+            ss<<val;
+            string valS="";
+            ss>>valS;
             string s=var1->valStr;
             s+=valS;
             string name="plus_"+var1->name+"_"+var2->name;
@@ -1633,38 +1654,42 @@ Vargen* Moins(Instruction* inst1, Instruction* inst2)
         else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(intType)==0)
         {
             int val=var1->valInt-var2->valInt;
-            char valStr[4];
-            sprintf(valStr,"%d",val);
-            string valS=valStr;
+            stringstream ss;
+            ss<<val;
+            string valS="";
+            ss>>valS;
             string name="moins_"+var1->name+"_"+var2->name;
             ret=new Vargen(name,intType,valS);
         }
-        else if(var1->type->name.compare(floatType)==0 && var2->type->name.compare(intType)==0)
+        else if(var1->type->name.compare(doubleType)==0 && var2->type->name.compare(intType)==0)
         {
-            float val=var1->valFloat-var2->valInt;
-            char valStr[8];
-            sprintf(valStr,"%f",val);
-            string valS=valStr;
+            double val=var1->valReal-var2->valInt;
+            stringstream ss;
+            ss<<val;
+            string valS="";
+            ss>>valS;
             string name="moins_"+var1->name+"_"+var2->name;
-            ret=new Vargen(name,floatType,valS);
+            ret=new Vargen(name,doubleType,valS);
         }
-        else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(doubleType)==0)
         {
-            float val=var1->valInt-var2->valFloat;
-            char valStr[8];
-            sprintf(valStr,"%f",val);
-            string valS=valStr;
+            double val=var1->valInt-var2->valReal;
+            stringstream ss;
+            ss<<val;
+            string valS="";
+            ss>>valS;
             string name="moins_"+var1->name+"_"+var2->name;
-            ret=new Vargen(name,floatType,valS);
+            ret=new Vargen(name,doubleType,valS);
         }
-        else if(var1->type->name.compare(floatType)==0 && var2->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(doubleType)==0 && var2->type->name.compare(doubleType)==0)
         {
-            float val=var1->valFloat-var2->valFloat;
-            char valStr[8];
-            sprintf(valStr,"%f",val);
-            string valS=valStr;
+            double val=var1->valReal-var2->valReal;
+            stringstream ss;
+            ss<<val;
+            string valS="";
+            ss>>valS;
             string name="moins_"+var1->name+"_"+var2->name;
-            ret=new Vargen(name,floatType,valS);
+            ret=new Vargen(name,doubleType,valS);
         }
         else
         {
@@ -1697,38 +1722,42 @@ Vargen* Mult(Instruction* inst1, Instruction* inst2)
         else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(intType)==0)
         {            
             int val=var1->valInt*var2->valInt;
-            char valStr[4];
-            sprintf(valStr,"%d",val);
-            string valS=valStr;
+            stringstream ss;
+            ss<<val;
+            string valS="";
+            ss>>valS;
             string name="mult_"+var1->name+"_"+var2->name;
             ret=new Vargen(name,intType,valS);
         }
-        else if(var1->type->name.compare(floatType)==0 && var2->type->name.compare(intType)==0)
+        else if(var1->type->name.compare(doubleType)==0 && var2->type->name.compare(intType)==0)
         {
-            float val=var1->valFloat*var2->valInt;
-            char valStr[8];
-            sprintf(valStr,"%f",val);
-            string valS=valStr;
+            double val=var1->valReal*var2->valInt;
+            stringstream ss;
+            ss<<val;
+            string valS="";
+            ss>>valS;
             string name="mult_"+var1->name+"_"+var2->name;
-            ret=new Vargen(name,floatType,valS);
+            ret=new Vargen(name,doubleType,valS);
         }
-        else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(doubleType)==0)
         {
-            float val=var1->valInt*var2->valFloat;
-            char valStr[8];
-            sprintf(valStr,"%f",val);
-            string valS=valStr;
+            double val=var1->valInt*var2->valReal;
+            stringstream ss;
+            ss<<val;
+            string valS="";
+            ss>>valS;
             string name="mult_"+var1->name+"_"+var2->name;
-            ret=new Vargen(name,floatType,valS);
+            ret=new Vargen(name,doubleType,valS);
         }
-        else if(var1->type->name.compare(floatType)==0 && var2->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(doubleType)==0 && var2->type->name.compare(doubleType)==0)
         {
-            float val=var1->valFloat*var2->valFloat;
-            char valStr[8];
-            sprintf(valStr,"%f",val);
-            string valS=valStr;
+            double val=var1->valReal*var2->valReal;
+            stringstream ss;
+            ss<<val;
+            string valS="";
+            ss>>valS;
             string name="mult_"+var1->name+"_"+var2->name;
-            ret=new Vargen(name,floatType,valS);
+            ret=new Vargen(name,doubleType,valS);
         }
         else
         {
@@ -1770,11 +1799,11 @@ Vargen* Div(Instruction* inst1, Instruction* inst2)
                 char valStr[4];
                 sprintf(valStr,"%d",val);
                 string valS=valStr;
-                string name="moins_"+var1->name+"_"+var2->name;
+                string name="Div_"+var1->name+"_"+var2->name;
                 ret=new Vargen(name,intType,valS);
             }
         }
-        else if(var1->type->name.compare(floatType)==0 && var2->type->name.compare(intType)==0)
+        else if(var1->type->name.compare(doubleType)==0 && var2->type->name.compare(intType)==0)
         {
             if(var2->valInt==0)
             {
@@ -1782,44 +1811,47 @@ Vargen* Div(Instruction* inst1, Instruction* inst2)
             }
             else
             {
-                float val=var1->valFloat/var2->valInt;
-                char valStr[8];
-                sprintf(valStr,"%f",val);
-                string valS=valStr;
-                string name="moins_"+var1->name+"_"+var2->name;
-                ret=new Vargen(name,floatType,valS);
+                double val=var1->valReal/var2->valInt;
+                stringstream ss;
+                ss<<val;
+                string valS="";
+                ss>>valS;
+                string name="Div_"+var1->name+"_"+var2->name;
+                ret=new Vargen(name,doubleType,valS);
             }
         }
-        else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(intType)==0 && var2->type->name.compare(doubleType)==0)
         {
-            if(var2->valFloat==0)
+            if(var2->valReal==0)
             {
                 Erreur("division par zéro!",context);
             }
             else
             {
-                float val=var1->valInt/var2->valFloat;
-                char valStr[8];
-                sprintf(valStr,"%f",val);
-                string valS=valStr;
-                string name="moins_"+var1->name+"_"+var2->name;
-                ret=new Vargen(name,floatType,valS);
+                double val=var1->valInt/var2->valReal;
+                stringstream ss;
+                ss<<val;
+                string valS="";
+                ss>>valS;
+                string name="Div_"+var1->name+"_"+var2->name;
+                ret=new Vargen(name,doubleType,valS);
             }
         }
-        else if(var1->type->name.compare(floatType)==0 && var2->type->name.compare(floatType)==0)
+        else if(var1->type->name.compare(doubleType)==0 && var2->type->name.compare(doubleType)==0)
         {
-            if(var2->valFloat==0)
+            if(var2->valReal==0)
             {
                 Erreur("division par zéro!",context);
             }
             else
             {
-                float val=var1->valFloat/var2->valFloat;
-                char valStr[8];
-                sprintf(valStr,"%f",val);
-                string valS=valStr;
-                string name="moins_"+var1->name+"_"+var2->name;
-                ret=new Vargen(name,floatType,valS);
+                double val=var1->valReal/var2->valReal;
+                stringstream ss;
+                ss<<val;
+                string valS="";
+                ss>>valS;
+                string name="Div_"+var1->name+"_"+var2->name;
+                ret=new Vargen(name,doubleType,valS);
             }
         }
         else
@@ -1977,7 +2009,7 @@ void Erreur(std::string err, std::vector<DbVar *> _varDb)
 void Retour(Vargen* ret, std::vector<DbVar *> _varDb)
 {
     Vargen* retour=new Vargen(Retour_,signalType);
-    retour->arg.push_back(ret);
+    retour->arg.push_back(new Vargen(ret));
     if(_varDb.size()>0)
     {
         _varDb[0]->erase(Retour_);
@@ -2065,6 +2097,7 @@ vector<Vargen*> makeInstruction(string nameInst, std::vector<Vargen *> _arg, std
             }
             if(okDelete)
             {
+                cout<<"deleteVar: "<<crtVar->name<<endl;
                 crtVar->deleteVar();
                 delete crtVar;
             }

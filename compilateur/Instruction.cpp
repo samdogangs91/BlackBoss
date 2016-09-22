@@ -67,7 +67,7 @@ extern string stringType;
 extern string intType;
 extern string charType;
 extern string boolType;
-extern string floatType;
+extern string doubleType;
 extern Database* memory;
 
 extern string Continue_;
@@ -203,7 +203,7 @@ vector<Instruction*> orderInst(vector<Instruction*> _inst)
  */
 bool isOpe(char c)
 {
-    return (c=='+')||(c=='-')||(c=='*')||(c=='∕')||(c=='=')||(c=='!')||(c=='>')||(c=='<')||(c=='%')||(c=='|')||(c=='&')||(c==';')||(c=='.');
+    return (c=='+')||(c=='-')||(c=='*')||(c=='∕')||(c=='=')||(c=='!')||(c=='>')||(c=='<')||(c=='%')||(c=='|')||(c=='&')||(c==';')/*||(c=='.')*/;
 }
 
 
@@ -541,11 +541,11 @@ string parenth(string s)
             }
             if(k<s.size() && actualFun.compare("")==0)
             {
-                if(s[k]=='.')
+                /*if(s[k]=='.')
                 {
                     actualFun=".";
-                }
-                else if(s[k]=='=')
+                }*/
+                if(s[k]=='=')
                 {
                     actualFun="=";
                 }
@@ -1575,12 +1575,12 @@ bool isWellPar(string s, unsigned int _nbFun)
                 }
                 if(k<s.size())
                 {
-                    if(s[k]=='.')
+                    /*if(s[k]=='.')
                     {
                         actualFun=".";
                         continue;
-                    }
-                    else if(s[k]=='=')
+                    }*/
+                    if(s[k]=='=')
                     {
                         actualFun="=";
                         continue;
@@ -1804,7 +1804,9 @@ void Instruction::determineType()
             crt=uselessPar(crt);
             if(!isWellPar(crt))
             {
+                //cout<<"avantPar:"<<crt<<endl;
                 crt=parenth(crt);
+                //cout<<"postPar:"<<crt<<endl;
                 //crt=uselessPar(crt);
             }
             else
@@ -1950,13 +1952,13 @@ void Instruction::determineType()
                     }
                     if(k<s.size() && actualFun.compare("")==0)
                     {
-                        if(s[k]=='.')
+                        /*if(s[k]=='.')
                         {
                             actualFun=Point_;
                             type=actualFun;
                             return;
-                        }
-                        else if(s[k]=='=')
+                        }*/
+                        if(s[k]=='=')
                         {
                             actualFun=Set_;
                             type=actualFun;
@@ -2097,6 +2099,8 @@ Instruction::Instruction(string id)
             assoc=getStringId(row[5]? row[5]:"");
             string isOpS=(row[6]? row[6]: "");
             isOp=(isOpS.compare("1")==0);
+            string tmpS=(row[7]? row[7]:"");
+            tmp=(tmpS.compare("1")==0);
             preCompile(brut);
         }
         else
@@ -2135,7 +2139,7 @@ Instruction::Instruction(string _name, string _cont,vector<Vargen*> _arg, vector
     type="";
     //cout<<"contenu inst="<<brut<<endl;
     preCompile(_cont);
-    //cout<<"fin precompile "<<name<<endl;
+    //cout<<"fin precompile "<<type<<endl;
 
 }
 
@@ -2239,13 +2243,13 @@ void Instruction::initType()
     Vargen* intVar=new Vargen(intType,stringType,intType);
     Vargen* stringVar=new Vargen(stringType,stringType,stringType);
     Vargen* charVar=new Vargen(charType,stringType,charType);
-    Vargen* floatVar=new Vargen(floatType,stringType,floatType);
+    Vargen* doubleVar=new Vargen(doubleType,stringType,doubleType);
     varDb.back()->insert(newL);
     varDb.back()->insert(boolVar);
     varDb.back()->insert(intVar);
     varDb.back()->insert(stringVar);
     varDb.back()->insert(charVar);
-    varDb.back()->insert(floatVar);
+    varDb.back()->insert(doubleVar);
 }
 
 string recopieString(string s)
@@ -2336,11 +2340,13 @@ Instruction::Instruction(string _name, string argS, string retourS, string inst,
             string instId=getIdString(brut);
 
             Vargen* assocVar=new Vargen(assoc,"string",assoc);
-            varDb[size-2]->insert(assocVar);
+            //varDb[size-2]->insert(assocVar);
+            delete assocVar;
             string assocId=getIdString(assoc);
 
             string isOpS=(isOp? "true" : "false");
-            string req="insert into instruction(name,argT,retourT,cont,prior,assoc,isOp) values("+nameId+","+argTId+","+retourId+","+instId+","+priorS+","+assocId+","+isOpS+");";
+            string tmpS=(tmp? "true" : "false");
+            string req="insert into instruction(name,argT,retourT,cont,prior,assoc,isOp,tmp) values("+nameId+","+argTId+","+retourId+","+instId+","+priorS+","+assocId+","+isOpS+","+tmpS+");";
             //cout<<"requete inst:"<<req<<endl;
             memory->insert(req);
         }
@@ -2426,13 +2432,14 @@ string getSignals()
 
 void For(Instruction* deb, Instruction* stop, Instruction* incr,Instruction* boucle)
 {
+    deb->compile();
     stop->compile();
     if(stop->retour.size()==1)
     {
         Vargen* term=stop->retour[0];
         if(term->type->name.compare(boolType)==0)
         {
-            for(deb->compile();term->valBool;incr->compile())
+            while(term->valBool)
             {
                 //boucle
                 boucle->compile();
@@ -2445,7 +2452,22 @@ void For(Instruction* deb, Instruction* stop, Instruction* incr,Instruction* bou
                 }
 
                 //préparation au nouveau tour de boucle
+                incr->compile();
                 stop->compile();
+                if(stop->retour.size()==1)
+                {
+                    term=stop->retour[0];
+                    if(term->type->name.compare(boolType)!=0)
+                    {
+                       Erreur("Le deuxième argument de for n'est pas de type bool",context);
+                       break;
+                    }
+                }
+                else
+                {
+                    Erreur("Le deuxième argument de for est NULL",context);
+                    break;
+                }
             }
         }
         else
@@ -2475,7 +2497,7 @@ void While(Instruction* cond, Instruction* boucle)
             while(stop->valBool)
             {
                 //boucle
-                cout<<"boucle compile->"<<endl;
+                //cout<<"boucle compile->"<<endl;
                 boucle->compile();
 
                 //check si des erreurs, des returns, des breaks ou des continues sont apparues
@@ -2487,6 +2509,20 @@ void While(Instruction* cond, Instruction* boucle)
 
                 //préparation au nouveau tour de boucle
                 cond->compile();
+                if(cond->retour.size()==1)
+                {
+                    stop=cond->retour[0];
+                    if(stop->type->name.compare(boolType)!=0)
+                    {
+                       Erreur("Le deuxième argument de while n'est pas de type bool",context);
+                       break;
+                    }
+                }
+                else
+                {
+                    Erreur("Le deuxième argument de while est NULL",context);
+                    break;
+                }
                 //cout<<"fin du premier tour de boucle"<<endl;
             }
         }
@@ -2744,7 +2780,7 @@ vector<string> getArg(string s, char sep, unsigned int numPar_)
         {
             if(numPar==(numPar_-1))
             {
-                cout<<"Erreur: trop de parenthèses fermantes"<<endl;
+                Erreur("trop de parenthèses fermantes",context);
                 break;
             }
             else if(numPar==numPar_)
@@ -3367,7 +3403,7 @@ void Instruction::compile()
                         {
                             vector<Vargen*> exit;
                             //ret->print();
-                            exit.push_back(ret);
+                            exit.push_back(new Vargen(ret));
                             retour=exit;
                         }
                         else
@@ -3459,7 +3495,7 @@ void Instruction::compile()
                 string actual=cont[0];
                 if(actual.size()>4)
                 {
-                    string crt=actual.substr(4);
+                    string crt=actual.substr(3);
                     //cout<<crt<<endl;
                     vector<string> inst=getArg(crt,';');
                     if(inst.size()==4)
@@ -3477,7 +3513,7 @@ void Instruction::compile()
                         sprintf(troisTmp,"%d",3);
                         string trois=troisTmp;
                         //DbVar* db=new DbVar(varPar,varTmp);
-                        For(new Instruction(name+"_"+zero,inst[0],newArg,varDb),new Instruction(name+"_"+un,inst[1],arg,varDb),new Instruction(name+"_"+deux,inst[2],arg,varDb),new Instruction(name+"_"+trois,inst[3],arg,varDb));
+                        For(new Instruction(name+"_"+zero,inst[0],arg,varDb),new Instruction(name+"_"+un,inst[1],arg,varDb),new Instruction(name+"_"+deux,inst[2],arg,varDb),new Instruction(name+"_"+trois,inst[3],arg,varDb));
                     }
                     else if(inst.size()<4)
                     {
@@ -4004,6 +4040,7 @@ void Instruction::compile()
         }
         else if(type.compare(In_)==0)
         {
+            //cout<<"compile: "<<type<<endl;
             string nameOp=">>";
             if(cont.size()==1)
             {
