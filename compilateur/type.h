@@ -43,6 +43,7 @@ public:
     std::vector<Attribut*> cont;
     std::vector<Instruction*> meth;
     std::string desc;
+    bool tmp;
 
     //Methode de modification d'un type
     void addAtt(std::string _name,std::string _type);
@@ -50,6 +51,7 @@ public:
     void modifAtt(std::string _name, std::string _type);
     void addMeth(std::string _name);
     void deleteMeth(std::string _name);
+    void createContainer(std::string container,std::string content);
     void deleteType();
 
     bool isContainer();

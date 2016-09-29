@@ -119,9 +119,8 @@ std::vector<Vargen*> makeArgCont(string _arg, string type)
 {
     std::vector<Vargen*> ret;
     string name="";
-    bool okName=true;
     unsigned int k=0;
-    while(k<_arg.size())
+    for(k=0;k<_arg.size();k++)
     {
         if(_arg[k]==';')
         {
@@ -133,13 +132,17 @@ std::vector<Vargen*> makeArgCont(string _arg, string type)
             {
                 ret.push_back(new Vargen(name,type));
             }
-            okName=true;
+            name="";
+            continue;
         }
-        else if(okName)
+        else
         {
             name+=_arg[k];
+            if(k==_arg.size()-1)
+            {
+                ret.push_back(new Vargen(name,type));
+            }
         }
-        k++;
     }
     return ret;
 }
@@ -421,10 +424,11 @@ Vargen::Vargen(string _name, string _type, string _arg, bool _tmp)
     }
     else if(type->isContainer())
     {
+        _type=type->name;
         string typeCont="";
         unsigned int i;
         bool under=false;
-        while(i<_type.size())
+        for(i=0;i<_type.size();i++)
         {
             if(_type[i]=='_' && !under)
             {

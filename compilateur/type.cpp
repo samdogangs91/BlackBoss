@@ -83,15 +83,18 @@ vector<Instruction*> makeMeth(string cont)
     vector<Instruction*> ret;
     unsigned int k=0;
     string nameT="";//nom du type
-    while(k<cont.size())
+    //cout<<"cont=\""<<cont<<"\""<<endl;
+    for(k=0;k<cont.size();k++)
     {
         if(cont[k]!=';') nameT+=cont[k];
         else
         {
-           ret.push_back(new Instruction(nameT));
-           nameT="";
+            if(nameT.compare("")!=0)
+            {
+                ret.push_back(new Instruction(nameT));
+                nameT="";
+            }
         }
-        k++;
     }
     return ret;
 }
@@ -115,9 +118,9 @@ Type::Type(std::string _name, bool estBasic)
     name=_name;
     //cout<<"typename="<<name<<endl;
     //cout<<"isBasic="<<(name.compare(intType)==0)<<endl;
-    if(!estBasic && _name.compare(stringType)!=0 && !isBasic(_name))
+    if(!estBasic && _name.compare(stringType)!=0 && !isBasic(_name) && !isContainer())
     {
-        string req="select cont, descr, meth from type where name=\""+_name+"\";";
+        string req="select cont, descr, meth, tmp from type where name=\""+_name+"\";";
         string contS="";
         MYSQL_RES* result=memory->request(req);
         if(result!=NULL)
@@ -131,10 +134,12 @@ Type::Type(std::string _name, bool estBasic)
                 desc=(row[1]? row[1]: "");
                 //cout<<"go meth"<<endl;
                 meth=makeMeth(row[2]? row[2]: "");
+                string tmpS=(row[2]? row[2]: "");
+                tmp=(tmpS.compare("true")==0);
             }
             else
             {
-                cout<<"Erreur: le type "<<name<<" n'existe pas!"<<endl;
+                Erreur("le type "+name+" n'existe pas!",context);
             }
         }
         else
@@ -143,10 +148,30 @@ Type::Type(std::string _name, bool estBasic)
         }
         mysql_free_result(result);
     }
-    /*else
+    else if(isContainer()) //on créé le type de container correspondant dans la bdd s'il n'existe pas déja
     {
-
-    }*/
+         string container="";
+         string content="";
+         unsigned int k;
+         bool okUnder=false;
+         for(k=0;k<_name.size();k++)
+         {
+             if(_name[k]=='_')
+             {
+                 okUnder=true;
+                 continue;
+             }
+             if(okUnder)
+             {
+                 content+=_name[k];
+             }
+             else
+             {
+                 container+=_name[k];
+             }
+         }
+         createContainer(container,content);
+    }
 }
 
 /*
@@ -158,6 +183,7 @@ Type::Type(string _name, string _desc, string _cont, string _meth)
     name=_name;
     desc=_desc;
     cont=makeAtt(_cont);
+    cont.push_back(new Attribut("tmp",boolType));
     meth=makeMeth(_meth);
     unsigned int k=0;
     string contS="";
@@ -166,6 +192,7 @@ Type::Type(string _name, string _desc, string _cont, string _meth)
         contS+=cont[k]->name+":"+cont[k]->type+";";
         k++;
     }
+    contS+="tmp:bool;";
     k=0;
     string req="insert into type(name,descr,cont,meth) values(\""+_name+"\",\""+_desc+"\",\""+contS+"\",\""+_meth+"\");";
     cout<<req<<endl;
@@ -343,21 +370,19 @@ Type::Type(string _name, string _desc, string _cont, string _meth)
         }
         k++;
     }
-    cout<<req2<<endl;
     //Création de la table correspondante
     memory->request(req2);
 
 }
 
 
+
 /*
  * création de type container<content>
  * content=type déja connu dans la base
  */
-
-Type::Type(string container, string content)
+void Type::createContainer(string container, string content)
 {
-    //cout<<"lol"<<endl;
     name=container+"_"+content;
     string req="select name from type where name=\""+name+"\";";
     MYSQL_RES* res=memory->request(req);
@@ -376,7 +401,7 @@ Type::Type(string container, string content)
                 string req1="insert into type(name,descr,cont,meth) values(\""+name+"\",\"\",\""+name+"_id:int;cont:string;size:int\",\"[];=;>=;==;+;\");";
                 memory->insert(req1);
                 string req2="create table "+name+"("+name+"_id int unsigned auto_increment primary key,cont int unsigned, constraint `fk_constraint_"+name+"_cont` foreign key (cont) references list_char(list_char_id) on delete cascade,size int);";
-                cout<<req2<<endl;
+                //cout<<req2<<endl;
                 memory->request(req2);
             }
             else if(container.compare(queueType)==0)
@@ -384,7 +409,7 @@ Type::Type(string container, string content)
                 string req1="insert into type(name,descr,cont,meth) values(\""+name+"\",\"\",\""+name+"_id:int;cont:string;size:int\",\"[];=;>=;==;+;\");";
                 memory->insert(req1);
                 string req2="create table "+name+"("+name+"_id int unsigned auto_increment primary key,cont int unsigned, constraint `fk_constraint_"+name+"_cont` foreign key (cont) references list_char(list_char_id) on delete cascade,size int);";
-                cout<<req2<<endl;
+                //cout<<req2<<endl;
                 memory->request(req2);
             }
             else if(container.compare(stackType)==0)
@@ -392,7 +417,66 @@ Type::Type(string container, string content)
                 string req1="insert into type(name,descr,cont,meth) values(\""+name+"\",\"\",\""+name+"_id:int;cont:string;size:int\",\"[];=;>=;==;+;\");";
                 memory->insert(req1);
                 string req2="create table "+name+"("+name+"_id int unsigned auto_increment primary key,cont int unsigned, constraint `fk_constraint_"+name+"_cont` foreign key (cont) references list_char(list_char_id) on delete cascade,size int);";
-                cout<<req2<<endl;
+                //cout<<req2<<endl;
+                memory->request(req2);
+            }
+            else
+            {
+                Erreur("container: "+container+" doesn't exist!",context);
+            }
+        }
+    }
+    else
+    {
+        cout<<"Error requête sql: \""<<req<<"\""<<endl;
+    }
+    mysql_free_result(res);
+}
+
+
+
+
+/*
+ * création de type container<content>
+ * content=type déja connu dans la base
+ */
+Type::Type(string container, string content)
+{
+    name=container+"_"+content;
+    string req="select name from type where name=\""+name+"\";";
+    MYSQL_RES* res=memory->request(req);
+    if(res!=NULL)
+    {
+        MYSQL_ROW row;
+        if(row=mysql_fetch_row(res))
+        {
+            //cout<<"le type "<<name<<" existe déja!"<<endl;
+        }
+        else
+        {
+
+            if(container.compare(listType)==0)
+            {
+                string req1="insert into type(name,descr,cont,meth) values(\""+name+"\",\"\",\""+name+"_id:int;cont:string;size:int\",\"[];=;>=;==;+;\");";
+                memory->insert(req1);
+                string req2="create table "+name+"("+name+"_id int unsigned auto_increment primary key,cont int unsigned, constraint `fk_constraint_"+name+"_cont` foreign key (cont) references list_char(list_char_id) on delete cascade,size int);";
+                //cout<<req2<<endl;
+                memory->request(req2);
+            }
+            else if(container.compare(queueType)==0)
+            {
+                string req1="insert into type(name,descr,cont,meth) values(\""+name+"\",\"\",\""+name+"_id:int;cont:string;size:int\",\"[];=;>=;==;+;\");";
+                memory->insert(req1);
+                string req2="create table "+name+"("+name+"_id int unsigned auto_increment primary key,cont int unsigned, constraint `fk_constraint_"+name+"_cont` foreign key (cont) references list_char(list_char_id) on delete cascade,size int);";
+                //cout<<req2<<endl;
+                memory->request(req2);
+            }
+            else if(container.compare(stackType)==0)
+            {
+                string req1="insert into type(name,descr,cont,meth) values(\""+name+"\",\"\",\""+name+"_id:int;cont:string;size:int\",\"[];=;>=;==;+;\");";
+                memory->insert(req1);
+                string req2="create table "+name+"("+name+"_id int unsigned auto_increment primary key,cont int unsigned, constraint `fk_constraint_"+name+"_cont` foreign key (cont) references list_char(list_char_id) on delete cascade,size int);";
+                //cout<<req2<<endl;
                 memory->request(req2);
             }
             else
@@ -411,64 +495,74 @@ Type::Type(string container, string content)
 
 void Type::addAtt(string _name, string _type)
 {
-    string req="select cont from type where name=\""+name+"\";";
-    MYSQL_RES* res=memory->request(req);
-    string exCont="";
-    if(res!=NULL)
+    bool okCreate=true;
+    unsigned int k;
+    for(k=0;k<cont.size();k++)
     {
-        MYSQL_ROW row;
-        if(row=mysql_fetch_row(res))
+        okCreate=!(cont[k]->name.compare(_name)==0);
+        if(!okCreate)
         {
-            exCont=(row[0]? row[0]:"");
-        }
-        else
-        {
-            cout<<"erreur le type "+name+" n'existe pas"<<endl;
+            Erreur("l'attribut "+_name+" existe déja dans le type "+_name,context);
+            break;
         }
     }
-    else
+    if(okCreate)
     {
-       cout<<"Error requête sql: \""<<req<<"\""<<endl;
-    }
-    mysql_free_result(res);
-    if(exCont.compare("")!=0)
-    {
-        exCont+=_name+":"+_type+";";
-        req="update type set cont=\""+exCont+"\" where name=\""+name+"\";";
-        cout<<req<<endl;
-        memory->insert(req);
-        if(isBasic(_type))
+        string req="select cont from type where name=\""+name+"\";";
+        MYSQL_RES* res=memory->request(req);
+        string exCont="";
+        if(res!=NULL)
         {
-            string req2="alter table "+name+" add "+_name+" "+_type+";";
-            cout<<req2<<endl;
-            memory->insert(req2);
-        }
-        else if(_type.compare("string")==0)
-        {
-            string req2="alter table "+name+" add "+_name+" int unsigned;";
-            cout<<req2<<endl;
-            memory->insert(req2);
-            string req3="alter table "+name+" add constraint `fk_"+_name+"` foreign key ("+_name+") references string(string_id) on delete cascade;";
-            cout<<req3<<endl;
-        }
-        else
-        {
-            Type* crtType=new Type(_type);
-            if(crtType->cont.size()>0)
+            MYSQL_ROW row;
+            if(row=mysql_fetch_row(res))
             {
-                Attribut* crtAtt=crtType->cont[0];
-                string req2="alter table "+name+" add "+_name+" "+crtAtt->name+";";
-                cout<<req2<<endl;
-                memory->insert(req2);
-                string req3="alter table "+name+" add constraint `fk_"+_name+"` foreign key ("+_name+") references "+_type+"("+crtAtt->name+") on delete cascade;";
-                cout<<req3<<endl;
+                exCont=(row[0]? row[0]:"");
+            }
+            else
+            {
+                Erreur("le type "+name+" n'existe pas",context);
             }
         }
-        cont.push_back(new Attribut(_name,_type));
-    }
-    else
-    {
-        cout<<"Erreur modification du type "<<name<<endl;
+        else
+        {
+           Erreur("requête sql: \""+req+"\"",context);
+        }
+        mysql_free_result(res);
+        if(exCont.compare("")!=0)
+        {
+            exCont+=_name+":"+_type+";";
+            req="update type set cont=\""+exCont+"\" where name=\""+name+"\";";
+            memory->insert(req);
+            if(isBasic(_type))
+            {
+                string req2="alter table "+name+" add "+_name+" "+_type+";";
+                memory->insert(req2);
+            }
+            else if(_type.compare("string")==0)
+            {
+                string req2="alter table "+name+" add "+_name+" int unsigned;";
+                memory->insert(req2);
+                string req3="alter table "+name+" add constraint `fk_"+_name+"` foreign key ("+_name+") references string(string_id) on delete cascade;";
+                memory->insert(req3);
+            }
+            else
+            {
+                Type* crtType=new Type(_type);
+                if(crtType->cont.size()>0)
+                {
+                    Attribut* crtAtt=crtType->cont[0];
+                    string req2="alter table "+name+" add "+_name+" "+crtAtt->name+";";
+                    memory->insert(req2);
+                    string req3="alter table "+name+" add constraint `fk_"+_name+"` foreign key ("+_name+") references "+_type+"("+crtAtt->name+") on delete cascade;";
+                    memory->insert(req3);
+                }
+            }
+            cont.push_back(new Attribut(_name,_type));
+        }
+        else
+        {
+            Erreur("lors de la modification du type "+name,context);
+        }
     }
 }
 
@@ -498,7 +592,7 @@ void Type::deleteAtt(string _name)
     }
     else
     {
-        cout<<"l'attribut "+_name+" n'existe pas dans la table "+name<<endl;
+        Erreur("l'attribut "+_name+" n'existe pas dans la table "+name,context);
     }
 }
 
@@ -573,18 +667,18 @@ bool Type::isContainer()
     bool ret=false;
     if(name.size()>5)
     {
-        if(name[0]=='L' && name[1]=='i' && name[2]=='s' && name[3]=='t' && name[4]=='_')
+        if(name[0]=='l' && name[1]=='i' && name[2]=='s' && name[3]=='t' && name[4]=='_')
         {
             ret=true;
         }
     }
     else if(name.size()>6)
     {
-        if(name[0]=='Q' && name[1]=='u' && name[2]=='e' && name[3]=='u' && name[4]=='e' && name[5]=='_')
+        if(name[0]=='q' && name[1]=='u' && name[2]=='e' && name[3]=='u' && name[4]=='e' && name[5]=='_')
         {
             ret=true;
         }
-        else if(name[0]=='S' && name[1]=='t' && name[2]=='a' && name[3]=='c' && name[4]=='k' && name[5]=='_')
+        else if(name[0]=='s' && name[1]=='t' && name[2]=='a' && name[3]=='c' && name[4]=='k' && name[5]=='_')
         {
             ret=true;
         }

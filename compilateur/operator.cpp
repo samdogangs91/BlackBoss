@@ -19,13 +19,43 @@ string Erreur_="Erreur";
 string Retour_="Retour";
 
 
-Vargen* identity(std::string cont, vector<Vargen*> arg, vector<DbVar*> varDb)
+Vargen* identity(std::string cont, vector<Vargen*> arg,vector<DbVar*> varDb)
 {
    int res;
    int nb;
    //cout<<"dans identity: cont="<<cont<<endl;
    Vargen* ret=NULL;
    char* contC=(char*)cont.c_str();
+
+   //on vérifie si cont contient un '.' et peut donc être un réel
+   bool verifInt=true;
+   unsigned int l;
+   for(l=0;l<cont.size();l++)
+   {
+       if(cont[l]=='.' ||(cont[l]>='a' && cont[l]<='z'))
+       {
+           verifInt=false;
+           break;
+       }
+   }
+   //case int
+   if(verifInt)
+   {
+       res=sscanf(contC,"%d",&nb);
+       sscanf(contC,"%*[^\n]");
+       if(res==1)
+       {
+           ret=new Vargen(cont,intType,cont);
+           int size=varDb.size();
+           if(size>1)
+           {
+               varDb[size-2]->insert(ret);
+           }
+           return ret;
+       }
+   }
+
+
    //case double
    double val;
    res=sscanf(contC,"%lf",&val);
@@ -42,20 +72,6 @@ Vargen* identity(std::string cont, vector<Vargen*> arg, vector<DbVar*> varDb)
       return ret;
    }
 
-
-   //case int
-   res=sscanf(contC,"%d",&nb);
-   sscanf(contC,"%*[^\n]");
-   if(res==1)
-   {
-       ret=new Vargen(cont,intType,cont);
-       int size=varDb.size();
-       if(size>1)
-       {
-           varDb[size-2]->insert(ret);
-       }
-       return ret;
-   }
 
    //case char
    char c;
@@ -127,10 +143,6 @@ Vargen* identity(std::string cont, vector<Vargen*> arg, vector<DbVar*> varDb)
                break;
            }
        }
-   }
-   if(ret==NULL)
-   {
-
    }
 
    return ret;
@@ -287,6 +299,7 @@ Instruction* NewInst(Instruction* name_,Instruction* argS_, Instruction* retourS
                 {
                     okArg=true;
                     argS=var->valStr;
+                    //cout<<"argS dans NewInst="<<argS<<endl;
                 }
                 else
                 {
@@ -1079,22 +1092,17 @@ void Set2(Vargen* var1, Vargen* var2)
 }
 
 
-Vargen* getAtt(Instruction* instVar, std::string att) //operator ->
+Vargen* getAtt(Vargen* var, std::string att) //operator ->
 {
-    Vargen* ret=NULL;
-    if(instVar->retour.size()==1)
+    Vargen* ret=NULL;    
+    if(var==NULL)
     {
-        Vargen* var=instVar->retour[0];
-        if(var==NULL)
-        {
-            Erreur("var est NULL",context);
-        }
-        else
-        {
-            ret=var->getAtt(att);
-        }
+        Erreur("var est NULL",context);
     }
-    delete instVar;
+    else
+    {
+        ret=var->getAtt(att);
+    }
     return ret;
 }
 
@@ -1903,6 +1911,68 @@ Vargen* Reste(Instruction *inst1, Instruction *inst2)
 }
 
 
+
+Vargen* PlusU(Instruction *inst)
+{
+   Vargen* ret=NULL;
+   inst->compile();
+   if(inst->retour.size()==1)
+   {
+       Vargen* ret2=new Vargen(inst->retour[0]);
+       if(ret2!=NULL)
+       {
+           if(ret2->type->name.compare(intType)==0 || ret2->type->name.compare(doubleType)==0)
+           {
+               ret=ret2;
+           }
+           else
+           {
+               Erreur("La variable de retour dans Plus Unaire est NULL",context);
+           }
+       }
+       else
+       {
+           Erreur("la variable de retour dans Plus Unaire est NULL",context);
+       }
+   }
+   delete inst;
+   return ret;
+}
+
+
+Vargen* MoinsU(Instruction *inst)
+{
+   Vargen* ret=NULL;
+   inst->compile();
+   if(inst->retour.size()==1)
+   {
+       Vargen* ret2=new Vargen(inst->retour[0]);
+       if(ret2!=NULL)
+       {
+           if(ret2->type->name.compare(intType)==0)
+           {
+               ret=ret2;
+               ret->valInt=-ret->valInt;
+           }
+           else if(ret2->type->name.compare(doubleType)==0)
+           {
+               ret=ret2;
+               ret->valReal=-ret->valReal;
+           }
+           else
+           {
+               Erreur("La variable de retour dans Moins Unaire est NULL",context);
+           }
+       }
+       else
+       {
+           Erreur("la variable de retour dans Moins Unaire est NULL",context);
+       }
+   }
+   delete inst;
+   return ret;
+}
+
 void PlusEqual(Instruction* inst1, Instruction* inst2)
 {
     Vargen* var=NULL;
@@ -2009,11 +2079,18 @@ void Erreur(std::string err, std::vector<DbVar *> _varDb)
 void Retour(Vargen* ret, std::vector<DbVar *> _varDb)
 {
     Vargen* retour=new Vargen(Retour_,signalType);
-    retour->arg.push_back(new Vargen(ret));
-    if(_varDb.size()>0)
+    if(ret!=NULL)
     {
-        _varDb[0]->erase(Retour_);
-        _varDb[0]->insert(retour);
+        retour->arg.push_back(new Vargen(ret));
+        if(_varDb.size()>0)
+        {
+            _varDb[0]->erase(Retour_);
+            _varDb[0]->insert(retour);
+        }
+    }
+    else
+    {
+        Erreur("La variable de retour est NULL",_varDb);
     }
 }
 
@@ -2034,7 +2111,18 @@ vector<Vargen*> makeInstruction(string nameInst, std::vector<Vargen *> _arg, std
     {
         argT+=_arg[k]->type->name+";";
     }
-    string id=getIdInstruction(nameInst,argT);
+    string id="";
+    if(var==NULL)
+    {
+        id=getIdInstruction(nameInst,argT);
+    }
+    else
+    {
+        string name="";
+        name=var->type->name+"::"+nameInst;
+        id=getIdInstruction(nameInst,argT);
+    }
+    //cout<<"idInst="<<id<<endl;
     Instruction* inst=new Instruction(id);
 
 
@@ -2047,14 +2135,7 @@ vector<Vargen*> makeInstruction(string nameInst, std::vector<Vargen *> _arg, std
     //Mise en place des attributs de classe si l'instruction est une méthode
     if(var!=NULL)
     {
-        if(inst->varDb.size()>0)
-        {
-            DbVar* dbInst=inst->varDb[0];
-            for(k=0;k<var->arg.size();k++)
-            {
-                dbInst->insert(new Vargen(var->arg[k]));
-            }
-        }
+        inst->attClass=var->arg;
     }
 
 
@@ -2097,7 +2178,7 @@ vector<Vargen*> makeInstruction(string nameInst, std::vector<Vargen *> _arg, std
             }
             if(okDelete)
             {
-                cout<<"deleteVar: "<<crtVar->name<<endl;
+                //cout<<"deleteVar: "<<crtVar->name<<endl;
                 crtVar->deleteVar();
                 delete crtVar;
             }

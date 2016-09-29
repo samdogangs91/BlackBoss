@@ -26,12 +26,14 @@ public:
 
     //Attributs
     std::string name;
+    std::string id;
     unsigned int prior;
     std::string brut;
     bool tmp; //instruction temporaire ou non
     int index; //indice de l'appel de la fonction dans cont[0]
     bool isOp;
     bool ok;
+    std::string cond; //condition
     std::vector<Instruction*> newInst; //nouvelles instructions créées dans l'instruction courante
     std::vector<Instruction*> instFilles;
     std::string assoc;//Associativité à droite ou à gauche
@@ -104,7 +106,7 @@ Vargen* Neg(Instruction* inst);
 
 //operateur généraux
 void Set(Vargen* var, Instruction* inst);//operator =
-Vargen* getAtt(Instruction* var, std::string att); //operator ->
+Vargen* getAtt(Vargen* var, std::string att); //operator ->
 Instruction* getMeth(Vargen* var, std::string name, std::string argT="",std::string retourT="");
 Vargen* Cro(Instruction* inst, Instruction* num);
 Vargen* Point(Instruction* instVar, std::string att);
@@ -115,6 +117,8 @@ void Out(std::string stream, Instruction* inst);
 //opérateur pour les nombres
 void Incr(Vargen* var); //operator ++
 void Decr(Vargen * var); //operator --
+Vargen* PlusU(Instruction* inst);
+Vargen* MoinsU(Instruction* inst);
 Vargen* Plus(Instruction* inst1, Instruction* inst2);
 Vargen* Moins(Instruction* inst1, Instruction* inst2);
 Vargen* Mult(Instruction* inst1, Instruction* inst2);
