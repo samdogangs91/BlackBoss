@@ -19,9 +19,16 @@ int main(int argc, char *argv[])
     string s7="NewVar(x,int);NewVar(y,int);x=10;y=2;Return x/y;";
     string s8="NewVar(k,int);For(k=0;k<5;k++;(cout<<\"lol\"<<endl;););";
     string s9="NewInst(\"Sum\",\"x:int;y:int;z:int;\",\"int;\",\"Return x+y+z;\");Return Sum(1,2,3);";
+    string s10="NewVar(\"x\",\"list_int\",\"1;2;3;4;5;\");Return x[2]+x[3];";
 
     vector<Vargen*> arg;
-    cout<<s9<<endl;
+    cout<<s10<<endl;
+    /*string cont="gouts:list_gout;";
+    string desc="";
+    string name="personality";
+    Type* type=new Type(name,desc,cont,";",false);
+    type->print();
+    delete type;*/
     while(1)
     {
         cout<<"Donnez une instruction à compiler"<<endl;

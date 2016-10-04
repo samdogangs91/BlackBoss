@@ -1,6 +1,7 @@
 #include "Instruction.h"
 #include <fstream>
 #include <sstream>
+#include "Database.h"
 
 using namespace std;
 
@@ -10,6 +11,8 @@ extern string boolType;
 extern string doubleType;
 extern string stringType;
 extern string signalType;
+
+extern Database* memory;
 
 extern vector<DbVar*> context;
 
@@ -102,7 +105,7 @@ Vargen* identity(std::string cont, vector<Vargen*> arg,vector<DbVar*> varDb)
 
 
    //case string
-   if(cont.size()>3)
+   if(cont.size()>=2)
    {
        int size=cont.size();
        if(cont[0]=='"' && cont[size-1]=='"')
@@ -168,46 +171,165 @@ Vargen* Return(Instruction* inst)
 }
 
 
-Vargen* NewVar(std::string name, std::string type, vector<Vargen*> funArg, vector<DbVar*> _varDb, std::string arg, bool tmp)
+Vargen* NewVar(Instruction* name_, Instruction* type_, vector<Vargen*> funArg, vector<DbVar*> _varDb, Instruction* arg_, Instruction* tmp_)
 {
     Vargen* ret=NULL;
-    unsigned int k;
-    for(k=0;k<_varDb.size();k++)
+    string name="";
+    string type="";
+    string arg="";
+    bool tmp=true;
+    name_->compile();
+    if(name_->retour.size()==1)
     {
-        ret=_varDb[k]->find(name);
-        if(ret!=NULL)
+        Vargen* var=name_->retour[0];
+        if(var->type->name.compare(stringType)==0)
         {
-            break;
-        }
-    }
-    if(ret==NULL)
-    {
-        bool okCreate=true;
-        for(k=0;k<funArg.size();k++)
-        {
-            okCreate=!(name.compare(funArg[k]->name)==0);
-            if(!okCreate)
-            {
-                Erreur("La variable est déja présente dans les arguments",context);
-                break;
-            }
-        }
-        if(okCreate)
-        {
-            //cout<<"tmp="<<boolalpha<<tmp<<endl;
-            ret=new Vargen(name,type,arg,tmp);
-            int size=_varDb.size();
+            name=var->valStr;
+            unsigned int size=_varDb.size();
             if(size>1)
             {
-                _varDb[size-2]->insert(ret);
+                _varDb[size-2]->insert(new Vargen(var));
             }
+        }
+        else
+        {
+            Erreur("La variable name n'est pas de type string mais de type "+var->type->name,context);
         }
     }
     else
     {
-        Erreur("La variable "+name+" existe déja!",context);
+        Erreur("la variable name, pour créer une nouvelle variable, est NULL",context);
     }
 
+    type_->compile();
+    if(type_->retour.size()==1)
+    {
+        Vargen* var=type_->retour[0];
+        if(var->type->name.compare(stringType)==0)
+        {
+            type=var->valStr;
+            unsigned int size=_varDb.size();
+            if(size>1)
+            {
+                _varDb[size-2]->insert(new Vargen(var));
+            }
+        }
+        else
+        {
+            Erreur("La variable type n'est pas de type string mais de type "+var->type->name,context);
+        }
+    }
+    else
+    {
+        Erreur("la variable type, pour créer une nouvelle variable, est NULL",context);
+    }
+
+    if(arg_!=NULL)
+    {
+        arg_->compile();
+        if(arg_->retour.size()==1)
+        {
+            Vargen* var=arg_->retour[0];
+            if(var->type->name.compare(stringType)==0)
+            {
+                arg=var->valStr;
+                unsigned int size=_varDb.size();
+                if(size>1)
+                {
+                    _varDb[size-2]->insert(new Vargen(var));
+                }
+            }
+            else
+            {
+                Erreur("La variable arg n'est pas de type string mais de type "+var->type->name,context);
+            }
+        }
+        else
+        {
+            Erreur("la variable arg, pour créer une nouvelle variable, est NULL",context);
+        }
+    }
+
+    if(tmp_!=NULL)
+    {
+        tmp_->compile();
+        if(arg_->retour.size()==1)
+        {
+            Vargen* var=tmp_->retour[0];
+            if(var->type->name.compare(boolType)==0)
+            {
+                tmp=var->valBool;
+                unsigned int size=_varDb.size();
+                if(size>1)
+                {
+                    _varDb[size-2]->insert(new Vargen(var));
+                }
+            }
+            else
+            {
+                Erreur("La variable tmp n'est pas de type bool mais de type "+var->type->name,context);
+            }
+        }
+        else
+        {
+            Erreur("la variable tmp, pour créer une nouvelle variable, est NULL",context);
+        }
+    }
+
+    if(name.compare("")!=0 && type.compare("")!=0)
+    {
+        unsigned int k;
+        for(k=0;k<_varDb.size();k++)
+        {
+            ret=_varDb[k]->find(name);
+            if(ret!=NULL)
+            {
+                if(ret->type->name.compare(stringType)==0)
+                {
+                    if(ret->valStr.compare(name)==0)
+                    {
+                        _varDb[k]->remove(ret);
+                        ret=NULL;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        if(ret==NULL)
+        {
+            bool okCreate=true;
+            for(k=0;k<funArg.size();k++)
+            {
+                okCreate=!(name.compare(funArg[k]->name)==0);
+                if(!okCreate)
+                {
+                    Erreur("La variable est déja présente dans les arguments",context);
+                    break;
+                }
+            }
+            if(okCreate)
+            {
+                //cout<<"tmp="<<boolalpha<<tmp<<endl;
+                ret=new Vargen(name,type,arg,tmp);
+                int size=_varDb.size();
+                if(size>1)
+                {
+                    _varDb[size-2]->insert(new Vargen(ret));
+                }
+            }
+        }
+        else
+        {
+            Erreur("La variable "+name+" existe déja!",context);
+        }
+    }
     return ret;
 }
 
@@ -586,11 +708,100 @@ void addAtt(std::string nameType, std::string nameAtt, std::string typeAtt)
 }
 
 
-void addMeth(std::string nameType, std::string nameMeth)
+void addMeth(Instruction* nameType_, Instruction* nameMeth_,vector<DbVar*> varDb,Instruction* argTMeth_)
 {
-    Type* type= new Type(nameType);
-    type->addMeth(nameMeth);
-    delete type;
+    string nameType="";
+    string nameMeth="";
+    string argTMeth="";
+
+    nameType_->compile();
+    if(nameType_->retour.size()==1)
+    {
+         Vargen* var=nameType_->retour[0];
+         if(var->type->name.compare(stringType)==0)
+         {
+             nameType=var->valStr;
+             unsigned int size=varDb.size();
+             if(size>1)
+             {
+                 varDb[size-2]->insert(new Vargen(var));
+             }
+         }
+         else
+         {
+             Erreur("La variable nameType dans l'ajout de méthode n'est pas de type string",context);
+         }
+    }
+    else
+    {
+        Erreur("La variable nameType dans l'ajout de méthode return NULL",context);
+    }
+
+    nameMeth_->compile();
+    if(nameMeth_->retour.size()==1)
+    {
+        Vargen* var=nameMeth_->retour[0];
+        if(var->type->name.compare(stringType)==0)
+        {
+            nameMeth=var->valStr;
+            unsigned int size=varDb.size();
+            if(size>1)
+            {
+                varDb[size-2]->insert(new Vargen(var));
+            }
+        }
+        else
+        {
+            Erreur("La variable nameMeth dans l'ajout de méthode n'est pas de type string",context);
+        }
+    }
+    else
+    {
+        Erreur("La variable nameMeth dans l'ajout de méthode return NULL",context);
+    }
+
+    if(argTMeth_!=NULL)
+    {
+        argTMeth_->compile();
+        if(argTMeth_->retour.size()==1)
+        {
+            Vargen* var=argTMeth_->retour[0];
+            if(var->type->name.compare(stringType)==0)
+            {
+                argTMeth=var->valStr;
+                unsigned int size=varDb.size();
+                if(size>1)
+                {
+                    varDb[size-2]->insert(new Vargen(var));
+                }
+            }
+            else
+            {
+                Erreur("La variable argTMeth dans l'ajout de méthode n'est pas de type string",context);
+            }
+        }
+        else
+        {
+            Erreur("La variable argTMeth dans l'ajout de méthode return NULL",context);
+        }
+    }
+
+    if(nameType.compare("")!=0 && nameMeth.compare("")!=0)
+    {
+        Type* type= new Type(nameType);
+        //cout<<"dans addMeth: "<<nameMeth+"("+argTMeth+")"<<endl;
+        string id=getIdInstruction(nameMeth,argTMeth);
+        stringstream ss;
+        ss<<id;
+        unsigned int idNum;
+        ss>>idNum;
+        type->addMeth(idNum);
+        delete type;
+    }
+    else
+    {
+        Erreur("La méthode n'a pas été ajoutée au type voulu",context);
+    }
 }
 
 
@@ -613,7 +824,11 @@ void deleteAtt(std::string nameType, std::string nameAtt)
 void deleteMeth(std::string nameType, std::string nameMeth)
 {
     Type* type= new Type(nameType);
-    type->deleteMeth(nameMeth);
+    stringstream ss;
+    ss<<nameMeth;
+    unsigned int idNum;
+    ss>>idNum;
+    type->deleteMeth(idNum);
     delete type;
 }
 
@@ -1101,7 +1316,33 @@ Vargen* getAtt(Vargen* var, std::string att) //operator ->
     }
     else
     {
-        ret=var->getAtt(att);
+        if(att.compare("size")==0)
+        {
+            if(var->type->name.compare(stringType)==0)
+            {
+                stringstream ss;
+                ss<<var->valStr;
+                string valS="";
+                ss>>valS;
+                ret=new Vargen(var->name+"_size","int",valS);
+            }
+            else if(var->type->isContainer())
+            {
+                stringstream ss;
+                ss<<var->arg.size();
+                string valS="";
+                ss>>valS;
+                ret=new Vargen(var->name+"_size","int",valS);
+            }
+            else
+            {
+                Erreur("size n'est pas un attribut de "+var->type->name,context);
+            }
+        }
+        else
+        {
+            ret=var->getAtt(att);
+        }
     }
     return ret;
 }
@@ -2115,6 +2356,12 @@ vector<Vargen*> makeInstruction(string nameInst, std::vector<Vargen *> _arg, std
     if(var==NULL)
     {
         id=getIdInstruction(nameInst,argT);
+        if(id.compare("")==0)
+        {
+            cout<<"id="<<id<<endl;
+            nameInst=nameInst+"::"+nameInst;
+            id=getIdInstruction(nameInst,argT);
+        }
     }
     else
     {
@@ -2122,70 +2369,356 @@ vector<Vargen*> makeInstruction(string nameInst, std::vector<Vargen *> _arg, std
         name=var->type->name+"::"+nameInst;
         id=getIdInstruction(nameInst,argT);
     }
-    //cout<<"idInst="<<id<<endl;
-    Instruction* inst=new Instruction(id);
-
-
-    //Préparation à la compilation
-    //Mise en place des arguments
-    for(k=0;k<_arg.size();k++)
+    if(id.compare("")==0)
     {
-        inst->arg.push_back(_arg[k]);
-    }
-    //Mise en place des attributs de classe si l'instruction est une méthode
-    if(var!=NULL)
-    {
-        inst->attClass=var->arg;
-    }
+        Instruction* inst=new Instruction(id);
 
 
-    //Compilation
-    inst->compile();
-    //cout<<"fin de compilation de "<<inst->name<<endl;
-    for(k=0;k<inst->retour.size();k++)
-    {
-        ret.push_back(new Vargen(inst->retour[k]));
-    }
-    //delete inst;
-    context=exContext; //mise en place des anciennes variables
-
-
-    //Destruction des variables non réutilisées
-    for(k=0;k<_arg.size();k++)
-    {
-        Vargen* crtVar=_arg[k];
-        bool okDelete=true;
-        Vargen* search=NULL;
-        unsigned int j;
-        for(j=0;j<_varDb.size();j++)
+        //Préparation à la compilation
+        //Mise en place des arguments
+        for(k=0;k<_arg.size();k++)
         {
-            search=_varDb[j]->find(crtVar->name);
-            if(search!=NULL)
-            {
-                okDelete=false;
-                break;
-            }
+            inst->arg.push_back(_arg[k]);
         }
-        if(okDelete)
+        //Mise en place des attributs de classe si l'instruction est une méthode
+        if(var!=NULL)
         {
-            for(j=0;j<exArg.size();j++)
+            inst->attClass=var->arg;
+        }
+
+
+        //Compilation
+        inst->compile();
+        //cout<<"fin de compilation de "<<inst->name<<endl;
+        for(k=0;k<inst->retour.size();k++)
+        {
+            ret.push_back(new Vargen(inst->retour[k]));
+        }
+        //delete inst;
+        context=exContext; //mise en place des anciennes variables
+
+
+        //Destruction des variables non réutilisées
+        for(k=0;k<_arg.size();k++)
+        {
+            Vargen* crtVar=_arg[k];
+            bool okDelete=true;
+            Vargen* search=NULL;
+            unsigned int j;
+            for(j=0;j<_varDb.size();j++)
             {
-                okDelete=!(crtVar->name.compare(exArg[j]->name)==0);
-                if(!okDelete)
+                search=_varDb[j]->find(crtVar->name);
+                if(search!=NULL)
                 {
+                    okDelete=false;
                     break;
                 }
             }
             if(okDelete)
             {
-                //cout<<"deleteVar: "<<crtVar->name<<endl;
-                crtVar->deleteVar();
-                delete crtVar;
+                for(j=0;j<exArg.size();j++)
+                {
+                    okDelete=!(crtVar->name.compare(exArg[j]->name)==0);
+                    if(!okDelete)
+                    {
+                        break;
+                    }
+                }
+                if(okDelete)
+                {
+                    //cout<<"deleteVar: "<<crtVar->name<<endl;
+                    crtVar->deleteVar();
+                    delete crtVar;
+                }
             }
         }
+        delete inst;
     }
-    delete inst;
-
+    else
+    {
+        Erreur("l'instruction "+nameInst+"("+argT+") n'existe pas!",context);
+    }
     return ret;
+}
+
+
+int getMaxTable(string type)
+{
+    int ret=-1;
+    string req="select max("+type+"_id) as "+type+"_id from "+type+";";
+    MYSQL_RES* res=memory->request(req);
+    if(res!=NULL)
+    {
+
+        MYSQL_ROW row;
+        if(row=mysql_fetch_row(res))
+        {
+            string retS=row[0]?  row[0]:"";
+            if(retS.compare("")!=0)
+            {
+                stringstream ss;
+                ss<<retS;
+                ss>>ret;
+            }
+            else
+            {
+                ret=0;
+            }
+        }
+        else
+        {
+            ret=0;
+        }
+    }
+    else
+    {
+        cout<<"erreur requete sql:"<<req<<endl;
+    }
+    mysql_free_result(res);
+    return ret;
+}
+
+
+string transfContMeth(string nameVar,string cont, vector<Attribut*> att)
+{
+    string ret="";
+    unsigned int k;
+    string actualMot="";
+    for(k=0;k<cont.size();k++)
+    {
+        bool isOp=isOpe(cont[k]);
+        if(isOp)
+        {
+            if(actualMot.compare("")!=0)
+            {
+                unsigned int l;
+                bool isAtt=false;
+                for(l=0;l<att.size();l++)
+                {
+                    if(att[l]->name.compare(actualMot)==0)
+                    {
+                        isAtt=true;
+                        break;
+                    }
+                }
+                if(isAtt)
+                {
+                    ret+=nameVar+"->"+actualMot;
+                }
+                else
+                {
+                    ret+=actualMot;
+                }
+                cont+=cont[k];
+                actualMot="";
+            }
+        }
+        else
+        {
+            actualMot+=cont[k];
+        }
+        if(k==cont.size()-1 && !isOp)
+        {
+            if(actualMot.compare("")!=0)
+            {
+                unsigned int l;
+                bool isAtt=false;
+                for(l=0;l<att.size();l++)
+                {
+                    if(att[k]->name.compare(actualMot)==0)
+                    {
+                        isAtt=true;
+                        break;
+                    }
+                }
+                if(isAtt)
+                {
+                    ret+=nameVar+"->"+actualMot;
+                }
+                else
+                {
+                    ret+=actualMot;
+                }
+                cont+=cont[k];
+                actualMot="";
+            }
+        }
+
+    }
+    return ret;
+}
+
+
+void NewConst(Instruction *nameType_, std::vector<DbVar *> varDb_, Instruction *arg_, Instruction *cont_)
+{
+    string nameType="";
+    string arg="";
+    string cont="";
+    bool tmp=true;
+
+    nameType_->compile();
+    if(nameType_->retour.size()==1)
+    {
+        Vargen* var=nameType_->retour[0];
+        if(var!=NULL)
+        {
+            if(var->type->name.compare(stringType)==0)
+            {
+                nameType=var->valStr;
+                Type* type=new Type(nameType);
+                tmp=type->tmp;
+                delete type;
+            }
+            else
+            {
+                Erreur("Le champs nameType de NewConst n'est pas de type string",context);
+            }
+            unsigned int size=varDb_.size();
+            if(size>1)
+            {
+                var->setTmp(tmp);
+                varDb_[size-2]->insert(new Vargen(var));
+            }
+
+        }
+        else
+        {
+            Erreur("Le champs nameType de NewConst est NULL",context);
+        }
+    }
+    else
+    {
+        Erreur("Le champs nameType de NewConst return NULL",context);
+    }
+
+    if(arg_!=NULL)
+    {
+        arg_->compile();
+        if(arg_->retour.size()==1)
+        {
+            Vargen* var=arg_->retour[0];
+            if(var!=NULL)
+            {
+                unsigned int size=varDb_.size();
+                if(size>1)
+                {
+                    var->setTmp(tmp);
+                    varDb_[size-2]->insert(new Vargen(var));
+                }
+                if(var->type->name.compare(stringType)==0)
+                {
+                    arg=var->valStr;
+                }
+                else
+                {
+                    Erreur("Le champs arg de NewConst n'est pas de type string",context);
+                }
+            }
+            else
+            {
+                Erreur("Le champs arg de NewConst est NULL",context);
+            }
+        }
+        else
+        {
+            Erreur("Le champs arg de NewConst return NULL",context);
+        }
+    }
+
+    if(cont_!=NULL)
+    {
+        cont_->compile();
+        if(cont_->retour.size()==1)
+        {
+            Vargen* var=cont_->retour[0];
+            if(var!=NULL)
+            {
+                unsigned int size=varDb_.size();
+                if(size>1)
+                {
+                    var->setTmp(tmp);
+                    varDb_[size-2]->insert(new Vargen(var));
+                }
+                if(var->type->name.compare(stringType)==0)
+                {
+                    cont=var->valStr;
+                }
+                else
+                {
+                    Erreur("Le champs contenu de NewConst n'est pas de type string",context);
+                }
+            }
+            else
+            {
+                Erreur("Le champs contenu de NewConst est NULL",context);
+            }
+        }
+        else
+        {
+            Erreur("Le champs contenu de NewConst return NULL",context);
+        }
+    }
+
+
+    if(nameType.compare("")!=0)
+    {
+        string argT="";
+        if(arg.compare("")!=0 && cont.compare("")==0)
+        {
+            vector<Vargen*> argVar=makeArgVar(arg);
+            unsigned int k;
+            for(k=0;k<argVar.size();k++)
+            {                
+                if(k!=argVar.size()-1)
+                {
+                    argT+=argVar[k]->type->name+",";
+                }
+                else
+                {
+                    argT+=argVar[k]->type->name;
+                }
+                delete argVar[k];
+            }
+            argVar.clear();
+        }
+        string nameInst=nameType+"::"+nameType;
+        Type* type=new Type(nameType);
+        int num=getMaxTable(nameType);
+        if(num>=0)
+        {
+            num++;
+            stringstream ss;
+            string idNum="";
+            ss<<num;
+            ss>>idNum;
+            string exCont=cont;
+            string nameVar=nameType+"_"+idNum;
+            cont=transfContMeth(nameVar,cont,type->cont);
+            cont="NewVar(\""+nameVar+"\",\""+nameType+"\",\"\",0);"+exCont+"Return "+nameVar+";";
+            Instruction* inst=new Instruction(nameInst,arg,nameType+";",cont,varDb_,type->tmp);
+            //cout<<"id newInst="<<inst->id<<endl;
+            inst->print();
+            if(inst->id.compare("")!=0)
+            {
+                stringstream ss1;
+                unsigned int idInt;
+                ss1<<inst->id;
+                ss1>>idInt;
+                type->addMeth(idInt);
+            }
+            else
+            {
+                Erreur("L'instruction "+nameInst+"("+argT+") n'a pas été ajoutée à la base de données",context);
+            }
+            delete inst;
+        }
+        else
+        {
+            cout<<"getMaxTable="<<num<<endl;
+            Erreur("L'instruction "+nameInst+"("+argT+") n'a pas été ajoutée à la base de données",context);
+        }
+        delete type;        
+    }
+
 }
 

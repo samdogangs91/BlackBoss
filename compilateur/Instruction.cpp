@@ -132,7 +132,7 @@ string getStringId(string id)
 string getIdString(string cont)
 {
     string id="";
-    string req="select string_id from string inner join list_char on string.string_id=list_char.list_char_id where cont=\""+cont+"\";";
+    string req="select string_id from string inner join list_char on string.string_id=list_char.list_char_id where cont='"+cont+"';";
     //cout<<"req="<<req<<endl;
     MYSQL_RES* res=memory->request(req);
     if(res!=NULL)
@@ -617,10 +617,24 @@ string parenth(string s)
         {
             //cout<<"instruction: "<<actualFun<<endl;
             string idFun=getIdInstruction(actualFun);
-            //cout<<"idFun:"<<idFun<<endl;
-            inst.push_back(new Instruction(idFun));
-            actualFun="";
-            actualMot="";
+            if(idFun.compare("")==0)
+            {
+                string nameFun=actualFun+"::"+actualFun;
+                idFun=getIdInstruction(nameFun);
+            }
+            if(idFun.compare("")!=0)
+            {
+                //cout<<"idFun:"<<idFun<<endl;
+                inst.push_back(new Instruction(idFun));
+                actualFun="";
+                actualMot="";
+            }
+            else
+            {
+                Erreur("l'instruction "+actualFun+" n'existe pas!",context);
+                actualFun="";
+                actualMot="";
+            }
         }
     }
 
@@ -1682,12 +1696,26 @@ bool isWellPar(string s, unsigned int _nbFun)
     return ret;
 }
 
+string uselessSpace(string s)
+{
+    if(s.size()>0)
+    {
+        if(s[0]==' ' || s[0]=='\n' || s[0]=='\t')
+        {
+            return uselessSpace(s.substr(1));
+        }
+        else return s;
+    }
+    else return s;
+}
+
 
 string uselessPar(string s)
 {
     int size=s.size();
     unsigned int k=0;
     int numPar=0;
+    s=uselessSpace(s);
     if(size>0)
     {
         if(s[0]=='(')
@@ -2190,6 +2218,7 @@ Instruction::Instruction(string _name, string _cont,vector<Vargen*> _arg, vector
     prior=2;
     assoc="droite";
     brut=_cont;
+    cout<<"cont init:"<<_cont<<endl;
     isOp=false;
     varDb=_var;
     arg=_arg;
@@ -2200,9 +2229,10 @@ Instruction::Instruction(string _name, string _cont,vector<Vargen*> _arg, vector
     context=varDb;
     ok=true;
     type="";
-    //cout<<"contenu inst="<<brut<<endl;
+    cout<<"avant precompile ="<<brut<<endl;
     preCompile(_cont);
-    //cout<<"fin precompile "<<type<<endl;
+    cout<<"fin precompile "<<type<<endl;
+    cout<<"brut: "<<brut<<endl;
 
 }
 
@@ -2353,6 +2383,7 @@ Instruction::Instruction(string _name, string argS, string retourS, string inst,
     cond="";
     //cout<<"retourS="<<retourS<<endl;
     tmp=tmp_;
+    cout<<"tmp dans Instruction:"<<boolalpha<<tmp<<endl;
     assoc=((_assoc.compare("droite")==0)? "droite" : "gauche");    
     arg=makeArgVar(argS);
     brut=setArgInString(inst,arg);
@@ -2366,8 +2397,9 @@ Instruction::Instruction(string _name, string argS, string retourS, string inst,
     }
     retourT=makeArg(retourS2);
     prior=_prior;
-    string id=getIdInstruction(name,argStr,retourS2);
+    id=getIdInstruction(name,argStr,retourS2);
     //cout<<"argT: "<<argStr<<endl;
+    //cout<<"id="<<id<<endl;
     if(id.compare("")==0)
     {
         ok=true;
@@ -2375,29 +2407,68 @@ Instruction::Instruction(string _name, string argS, string retourS, string inst,
         preCompile(inst);
         //cout<<"après preCompile"<<endl;
         unsigned int size=varDb.size();
-        if(size>2)
+        if(size>=2)
         {
             char priorStr[4];
             sprintf(priorStr,"%d",prior);
             string priorS=priorStr;
 
-            Vargen* nameVar=new Vargen(name,"string",name);
+            Vargen* nameVar=new Vargen(name,"string",name,tmp_);
             varDb[size-2]->insert(nameVar);
             string nameId=getIdString(name);
 
-            Vargen* argSvar=new Vargen(argStr,"string",argStr);
+            Vargen* argSvar=new Vargen(argStr,"string",argStr,tmp_);
             varDb[size-2]->insert(argSvar);
             string argTId=getIdString(argStr);
 
-            Vargen* retourSvar=new Vargen(retourS2,"string",retourS2);
+            Vargen* retourSvar=new Vargen(retourS2,"string",retourS2,tmp_);
             varDb[size-2]->insert(retourSvar);
             string retourId=getIdString(retourS2);
 
-            Vargen* instvar=new Vargen(brut,"string",brut);
+            Vargen* instvar=new Vargen(brut,"string",brut,tmp_);
             varDb[size-2]->insert(instvar);
             string instId=getIdString(brut);
 
-            Vargen* assocVar=new Vargen(assoc,"string",assoc);
+            Vargen* assocVar=new Vargen(assoc,"string",assoc,tmp_);
+            //varDb[size-2]->insert(assocVar);
+            delete assocVar;
+            string assocId=getIdString(assoc);
+
+            string isOpS=(isOp? "true" : "false");
+            string tmpS=(tmp? "true" : "false");
+            string req="insert into instruction(name,argT,retourT,cont,prior,assoc,isOp,tmp) values("+nameId+","+argTId+","+retourId+","+instId+","+priorS+","+assocId+","+isOpS+","+tmpS+");";
+            //cout<<"requete inst:"<<req<<endl;
+            memory->insert(req);
+            id=getIdInstruction(name,argStr);
+            //cout<<"id newInst="<<id<<endl;
+            if(id.compare("")==0)
+            {
+                Erreur("l'instruction "+name+"("+argStr+") n'a pas été créé en base de données",context);
+            }
+        }
+        else if(size==1)
+        {
+            char priorStr[4];
+            sprintf(priorStr,"%d",prior);
+            string priorS=priorStr;
+
+            Vargen* nameVar=new Vargen(name,"string",name,tmp_);
+            varDb[size-1]->insert(nameVar);
+            string nameId=getIdString(name);
+
+            Vargen* argSvar=new Vargen(argStr,"string",argStr,tmp_);
+            varDb[size-1]->insert(argSvar);
+            string argTId=getIdString(argStr);
+
+            Vargen* retourSvar=new Vargen(retourS2,"string",retourS2,tmp_);
+            varDb[size-1]->insert(retourSvar);
+            string retourId=getIdString(retourS2);
+
+            Vargen* instvar=new Vargen(brut,"string",brut,tmp_);
+            varDb[size-1]->insert(instvar);
+            string instId=getIdString(brut);
+
+            Vargen* assocVar=new Vargen(assoc,"string",assoc,tmp_);
             //varDb[size-2]->insert(assocVar);
             delete assocVar;
             string assocId=getIdString(assoc);
@@ -2413,14 +2484,13 @@ Instruction::Instruction(string _name, string argS, string retourS, string inst,
                 Erreur("l'instruction "+name+"("+argStr+") n'a pas été créé en base de données",context);
             }
         }
-
     }
     else
     {
+        Erreur("l'instruction "+name+"("+argStr+") existe déja",context);
         ok=false;
         //cout<<"ok=false"<<endl;
     }
-
 }
 
 
@@ -2760,7 +2830,7 @@ string getIdInstruction(string name, string argT, string retourT)
             }
         }
     }
-    else
+    else if(nameId.compare("")!=0)
     {
         string req="select ins_id from instruction where name="+nameId+";";
         MYSQL_RES* res=memory->request(req);
@@ -2780,6 +2850,10 @@ string getIdInstruction(string name, string argT, string retourT)
         {
             cout<<"Erreur requete sql: "<<req<<endl;
         }
+    }
+    else
+    {
+        //Erreur(name+" n'a pas été stocké dans la base de données",context);
     }
     return id;
 }
@@ -3255,12 +3329,13 @@ string instInString(string s)
         {
             tmp+=s[k];
         }
-        if(s[k]!='(' && tmp.compare("")!=0)
+        if(s[k]=='(' && tmp.compare("")!=0)
         {
             ret=tmp;
             break;
         }
     }
+    //cout<<"ret="<<ret<<endl;
     return ret;
 }
 
@@ -3501,7 +3576,7 @@ void Instruction::compile()
         //cas des instructions basiques
         else if(type.compare(Set_)==0)
         {
-            //cout<<"compile: "<<type<<endl;
+            cout<<"compile: "<<type<<endl;
             if(cont.size()==1)
             {
                 string crt=cont[0];
@@ -3628,7 +3703,7 @@ void Instruction::compile()
         }
         else if(type.compare(While_)==0)
         {
-            cout<<"compile While"<<endl;
+            //cout<<"compile While"<<endl;
             if(cont.size()==1)
             {
                 string actual=cont[0];
@@ -3659,17 +3734,57 @@ void Instruction::compile()
                 }
             }
         }
+        else if(type.compare(NewConst_)==0)
+        {
+            if(cont.size()==1)
+            {
+                string actual=cont[0];
+                if(actual.size()>8)
+                {
+                    string crt=actual.substr(8);
+                    vector<Instruction*> inst=subInst(crt,name,arg,varDb);
+                    unsigned int nbArg=1;
+                    if(inst.size()==nbArg)
+                    {
+                        NewConst(inst[0],varDb);
+                    }
+                    else if(inst.size()==nbArg+1)
+                    {
+                        NewConst(inst[0],varDb,inst[1]);
+                    }
+                    else if(inst.size()==nbArg+2)
+                    {
+                        NewConst(inst[0],varDb,inst[1],inst[2]);
+                    }
+                    else if(inst.size()<nbArg)
+                    {
+                        Erreur("Pas assez d'arguments dans "+type,context);
+                    }
+                    else
+                    {
+                        Erreur("Trop d'arguments dans "+type,context);
+                    }
+                    int j;
+                    for(j=inst.size()-1;j>=0;j--) //
+                    {
+                        Instruction* crtInst=inst[j];
+                        delete crtInst;
+                        inst.pop_back();
+                    }
+                }
+            }
+        }
         else if(type.compare(NewVar_)==0)
         {
             //cout<<"compile: NewVar"<<endl;
             if(cont.size()==1)
             {
                 string actual=cont[0];
-                if(actual.size()>4)
+                if(actual.size()>6)
                 {
                     string crt=actual.substr(6);
                     //cout<<crt<<endl;
-                    vector<string> inst=getArg(crt,',');
+                    vector<Instruction*> inst=subInst(crt,name,arg,varDb);
                     if(inst.size()==2)
                     {
                         NewVar(inst[0],inst[1],arg,varDb);
@@ -3680,8 +3795,7 @@ void Instruction::compile()
                     }
                     else if(inst.size()==4)
                     {
-                        bool tmp=(inst[3].compare("true")==0);
-                        NewVar(inst[0],inst[1],arg,varDb,inst[2],tmp);
+                        NewVar(inst[0],inst[1],arg,varDb,inst[2],inst[3]);
                     }
                     else if(inst.size()<2)
                     {
@@ -3690,6 +3804,13 @@ void Instruction::compile()
                     else
                     {
                         Erreur("Trop d'arguments dans "+type,context);
+                    }
+                    int j;
+                    for(j=inst.size()-1;j>=0;j--) //
+                    {
+                        Instruction* crtInst=inst[j];
+                        delete crtInst;
+                        inst.pop_back();
                     }
                 }
             }
@@ -3710,6 +3831,7 @@ void Instruction::compile()
                         //cout<<"trueCrt="<<trueCrt<<endl;
                         if(trueCrt.size()>0)
                         {
+                            //cout<<"dans identity: crt='"<<trueCrt<<"'"<<endl;
                             Vargen*ret=identity(trueCrt,arg,varDb);
                             if(ret!=NULL)
                             {
@@ -3745,6 +3867,7 @@ void Instruction::compile()
                     else
                     {
                         Vargen*ret=identity(crt,arg,varDb);
+                        //cout<<"dans identity: crt='"<<crt<<endl;
                         if(ret!=NULL)
                         {
                             vector<Vargen*> exit;
@@ -3917,11 +4040,15 @@ void Instruction::compile()
             {
                 string crt=cont[0];
                 crt=crt.substr(7);
-                vector<string> inst=getArg(crt,',');
+                vector<Instruction*> inst=subInst(crt,name,arg,varDb);
                 int nbArg=2;
-                if(inst.size()==nbArg)
+                if(inst.size()==nbArg+1)
                 {
-                    addMeth(inst[0],inst[1]);
+                    addMeth(inst[0],inst[1],varDb,inst[2]);
+                }
+                else if(inst.size()==nbArg)
+                {
+                    addMeth(inst[0],inst[1],varDb);
                 }
                 else if(inst.size()<nbArg)
                 {
@@ -3930,6 +4057,13 @@ void Instruction::compile()
                 else
                 {
                    Erreur("Trop d'arguments dans "+type,context);
+                }
+                int j;
+                for(j=inst.size()-1;j>=0;j--) //
+                {
+                    Instruction* crtInst=inst[j];
+                    delete crtInst;
+                    inst.pop_back();
                 }
             }
         }
@@ -4115,6 +4249,7 @@ void Instruction::compile()
                       string fun=instInString(arg2);
                       if(fun.compare("")!=0)
                       {
+                          //cout<<"case meth"<<endl;
                           string argFun=crt.substr(j+fun.size());
                           vector<Vargen*> argMeth=varInString(argFun,varDb);
                           vector<Vargen*> ret=makeInstruction(fun,argMeth,arg,varDb,var1);
@@ -4122,11 +4257,17 @@ void Instruction::compile()
                       }
                       else
                       {
-                            Vargen* ret=new Vargen(getAtt(var1,arg2));
-                            retour.clear();
-                            vector<Vargen*> exit;
-                            exit.push_back(ret);
-                            retour=exit;
+                            //cout<<"case att"<<endl;
+                            Vargen* att=getAtt(var1,arg2);
+                            if(att!=NULL)
+                            {
+                                Vargen* ret=new Vargen(att);
+                                retour.clear();
+                                vector<Vargen*> exit;
+                                exit.push_back(ret);
+                                retour=exit;
+                            }
+
                       }
                   }
                   else
@@ -4918,6 +5059,7 @@ void Instruction::print()
     string priorStr=priorId;
     cout<<"Priorité: "+priorStr<<endl;
     cout<<"Associativité à "<<assoc<<endl;
+    cout<<"Id: "<<id<<endl;
 }
 
 Instruction::Instruction(const Instruction& orig) {

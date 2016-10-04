@@ -24,10 +24,18 @@ DbVar::DbVar(DbVar* orig, DbVar* orig2)
     }
 }
 
-
+/*
+ * efface de la base de variable sans la supprimer de la bdd
+ */
 void DbVar::remove(Vargen *_var)
 {
-
+    map<string,Vargen*>::iterator it=cont.find(_var->name);
+    if(it!=cont.end())
+    {
+        Vargen* var=it->second;
+        delete var;
+        cont.erase(it);
+    }
 }
 
 
@@ -56,7 +64,9 @@ Vargen* DbVar::find(std::string name, std::string type)
     return var;
 }
 
-
+/*
+ * efface de la base de variable en la supprimant de la bdd
+ */
 void DbVar::erase(string name)
 {
     map<string,Vargen*>::iterator it=cont.find(name);
@@ -64,6 +74,7 @@ void DbVar::erase(string name)
     {
         Vargen* var=it->second;
         var->deleteVar();
+        delete var;
         cont.erase(it);
     }
 }

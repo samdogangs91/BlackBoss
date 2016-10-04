@@ -9,8 +9,8 @@
 class Instruction;
 class Type;
 
-void storeString(std::string _arg);
-std::string insertIntoList(std::string _arg);
+bool storeString(std::string _arg, bool tmp=true);
+std::string insertIntoList(std::string _arg, bool tmp=true);
 
 class Vargen
 {
@@ -18,9 +18,11 @@ public:
 
     Vargen(std::string _name,std::string _type,std::string val="", bool tmp=true);
     Vargen(Vargen* var);
+    Vargen(int id_,std::string type_);
 
     //attributs de tout type de variable
     std::string name;
+    std::string id;
     bool ok;
     bool tmp;
     Type* type;
@@ -39,6 +41,8 @@ public:
     void setValueAtt(std::string nameAtt, std::string newVal);
     Vargen* getAtt(std::string nameAtt);
     void deleteVar();
+    bool getTmp(); //check si la variable est temporaire en bdd
+    void setTmp(bool tmp_); //met la valeur tmp_ pour la variable tmp
 
     Instruction * getMeth(std::string id);
     Instruction* getMeth(std::string name,std::string argT="", std::string retourT="");

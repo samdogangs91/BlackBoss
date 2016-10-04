@@ -66,6 +66,8 @@ private:
 };
 
 
+
+bool isOpe(char c);
 std::string setArgInString(std::string brut, std::vector<Vargen*> arg);
 std::string recopieString(std::string s);
 
@@ -83,12 +85,12 @@ void Else(Instruction* cond, Instruction* boucle);
 Vargen* identity(std::string cont, std::vector<Vargen*> arg, std::vector<DbVar*> _varDb);
 Vargen* Return(Instruction* inst);
 std::vector<Vargen*> makeInstruction(std::string nameInst, std::vector<Vargen*> _arg, std::vector<Vargen*> exArg, std::vector<DbVar*> _varDb, Vargen* var=NULL);
-Vargen* NewVar(std::string name, std::string type, std::vector<Vargen*> funArg, std::vector<DbVar*> _varDb, std::string arg="", bool tmp=true);
+Vargen* NewVar(Instruction* name, Instruction* type, std::vector<Vargen*> funArg, std::vector<DbVar*> _varDb, Instruction* arg=NULL, Instruction* tmp=NULL);
 void deleteVar(std::string name, std::vector<DbVar*> _varDb);
 Instruction* NewInst(Instruction* name,Instruction* argS, Instruction* retourS, Instruction* inst, std::vector<DbVar*> varDb_, Instruction* tmp=NULL, Instruction* prior=NULL, Instruction* _assoc=NULL, Instruction* _isOp=NULL);
 void newType(std::string name, std::string desc, std::string cont, std::string meth);
 void addAtt(std::string nameType, std::string nameAtt, std::string typeAtt);
-void addMeth(std::string nameType, std::string nameMeth);
+void addMeth(Instruction* nameType, Instruction* nameMeth, std::vector<DbVar*> _varDb, Instruction* argTMeth=NULL);
 void modifAtt(std::string nameType, std::string nameAtt, std::string typeAtt);
 void deleteAtt(std::string nameType, std::string nameAtt);
 void deleteMeth(std::string nameType, std::string nameMeth);
@@ -112,6 +114,7 @@ Vargen* Cro(Instruction* inst, Instruction* num);
 Vargen* Point(Instruction* instVar, std::string att);
 void In(std::string stream, Instruction* inst);
 void Out(std::string stream, Instruction* inst);
+void NewConst(Instruction* nameType,std::vector<DbVar*> varDb_, Instruction* arg=NULL, Instruction* cont=NULL);
 
 
 //opérateur pour les nombres
