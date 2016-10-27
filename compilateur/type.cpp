@@ -38,7 +38,7 @@ bool isBasic(string s)
     return (s.compare(intType)==0)||(s.compare(charType)==0)||(s.compare(boolType)==0)||(s.compare(doubleType)==0)||(s.compare(signalType)==0);
 }
 
-vector<Attribut*> makeAtt(string contS) //lis les attributs d'une string codée sous la forme "nameAtt1:typeAtt1;nameAtt2:typeAtt2;..."
+vector<Attribut*> makeTrueAtt(string contS)
 {
     vector<Attribut*> cont;
     unsigned int k=0;
@@ -80,6 +80,84 @@ vector<Attribut*> makeAtt(string contS) //lis les attributs d'une string codée 
             }
         }
     }
+    return cont;
+}
+
+
+vector<Attribut*> makeAtt(string contS) //lis les attributs d'une string codée sous la forme "nameAtt1:typeAtt1;nameAtt2:typeAtt2;..."
+{
+    vector<Attribut*> cont;
+    unsigned int k=0;
+    //unsigned int l=0;
+    bool okNameAtt=false;
+    bool okTypeAtt=false;
+    string nameAtt="";
+    string typeAtt="";
+    for(k=0;k<contS.size();k++)//contS="x:int;y:float;..."
+    {
+        if(!okNameAtt)
+        {
+            if(contS[k]!=':')  nameAtt+=contS[k];
+            else
+            {
+                okNameAtt=true;
+                okTypeAtt=false;
+
+            }
+        }
+        else if(!okTypeAtt)
+        {
+            if(contS[k]!=';') typeAtt+=contS[k];
+            else
+            {
+                //okTypeAtt=true;
+                okNameAtt=false;
+                okTypeAtt=true;
+                if(nameAtt.compare("")!=0 && typeAtt.compare("")!=0)
+                {
+                    if(cont.size()==0)
+                    {
+                        if(!isBasic(typeAtt) && typeAtt.compare(stringType)!=0)
+                        {
+                            Type* type=new Type(typeAtt);
+                            cont=type->cont;
+                            delete type;
+                        }
+                        else
+                        {
+                            cont.push_back(new Attribut(nameAtt,typeAtt));
+                        }
+                    }
+                    else
+                    {
+                        cont.push_back(new Attribut(nameAtt,typeAtt));
+                    }
+                }
+                nameAtt="";
+                typeAtt="";
+            }
+            if(k==contS.size()-1 && nameAtt.compare("")!=0 && typeAtt.compare("")!=0)
+            {
+                if(cont.size()==0)
+                {
+                    if(!isBasic(typeAtt) && typeAtt.compare(stringType)!=0)
+                    {
+                        Type* type=new Type(typeAtt);
+                        cont=type->cont;
+                        delete type;
+                    }
+                    else
+                    {
+                        cont.push_back(new Attribut(nameAtt,typeAtt));
+                    }
+                }
+                else
+                {
+                    cont.push_back(new Attribut(nameAtt,typeAtt));
+                }
+            }
+        }
+    }
     //cout<<"l="<<l<<endl;
     return cont;
 }
@@ -112,10 +190,12 @@ vector<unsigned int> makeMeth(string cont)
 }
 
 
+
 Type::Type(Type *type)
 {
     name=type->name;
     cont=type->cont;
+    trueCont=type->trueCont;
     desc=type->desc;
     meth=type->meth;
     tmp=type->tmp;
@@ -139,7 +219,6 @@ void Type::setTmp(bool tmp_)
 /*
  * Ce constructeur sert à rechercher les types dans la bdd
  */
-
 Type::Type(std::string _name, bool tmp_)
 {
     name=_name;
@@ -158,6 +237,7 @@ Type::Type(std::string _name, bool tmp_)
                 //cout<<"avant makeAtt"<<endl;
                 contS= (row[0]? row[0]: "");
                 cont=makeAtt(contS);
+                trueCont=makeTrueAtt(contS);
                 desc=(row[1]? row[1]: "");
                 //cout<<"go meth"<<endl;
                 meth=makeMeth(row[2]? row[2]: "");
@@ -231,10 +311,10 @@ bool isContain(string name)
     return ret;
 }
 
+
 /*
  * Ce constructeur sert à créer des types dans la bdd
  */
-
 Type::Type(string _name, string _desc, string _cont, string _meth, bool tmp_)
 {
     name=_name;
@@ -242,6 +322,7 @@ Type::Type(string _name, string _desc, string _cont, string _meth, bool tmp_)
     tmp=tmp_;
     string tmpS=tmp? "true": "false";
     cont=makeAtt(_cont);
+    trueCont=makeTrueAtt(_cont);
     cont.push_back(new Attribut("tmp",boolType));
     meth=makeMeth(_meth);
     if(!alreadyExist())

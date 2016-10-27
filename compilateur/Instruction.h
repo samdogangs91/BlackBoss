@@ -13,6 +13,8 @@
 #include "dbvar.h"
 #include <cstdlib>
 #include <cstdio>
+#include "event.h"
+
 
 class Vargen;
 class Type;
@@ -65,6 +67,9 @@ private:
 
 };
 
+bool isNotSpe(char c);
+std::string addNameSpace(std::string nameSpace,std::string nameInst);
+std::string delNameSpace(std::string nameInst);
 
 
 bool isOpe(char c);
@@ -94,6 +99,8 @@ void addMeth(Instruction* nameType, Instruction* nameMeth, std::vector<DbVar*> _
 void modifAtt(std::string nameType, std::string nameAtt, std::string typeAtt);
 void deleteAtt(std::string nameType, std::string nameAtt);
 void deleteMeth(std::string nameType, std::string nameMeth);
+void setTmp(Instruction* instAtt, Instruction* tmpInst);
+void Event(std::string src,std::string dest,std::string cont,std::string type);
 
 //operator booleen
 Vargen* And(Instruction* inst1, Instruction* inst2);// operator &&
@@ -140,12 +147,14 @@ void Retour(Vargen* ret, std::vector<DbVar *> _varDb);
 
 
 
+int getMaxTable(std::string nameType);
 
 int indexInString(std::string name, std::string s, std::vector<int> index, bool isRight, unsigned int nbAtten=1);
 std::vector<Instruction*> findInstruction(std::string name);
 std::string getStringId(std::string id);
 std::string getIdString(std::string cont);
 std::string getIdInstruction(std::string name,std::string argT="", std::string retourT="");
+void deliverEvent(Event* ev);
 
 
 #endif	/* INSTRUCTION_H */

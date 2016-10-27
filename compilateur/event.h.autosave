@@ -1,0 +1,16 @@
+#ifndef EVENT_H
+#define EVENT_H
+
+#include <iostream>
+
+class Event
+{
+public:
+    Event(std::string src_,std::string dest_,std::string cont_, std::string type_);
+    std::string src;
+    std::string dest;
+    std::string cont;
+    std::string type;
+};
+
+#endif // EVENT_H

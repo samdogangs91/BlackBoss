@@ -22,6 +22,96 @@ string Erreur_="Erreur";
 string Retour_="Retour";
 
 
+Vargen* selectArg(string cont, vector<DbVar*> varDb)
+{
+    Vargen* ret=NULL;
+    unsigned int k;
+    int nbFle=0;
+    string var="";
+    string att="";
+    int nbAtt=0;
+    for(k=0;k<cont.size();k++)
+    {
+       if(k<=cont.size()-3)// toto->c
+       {
+            if(cont[k]=='-' && cont[k+1]=='>')
+            {
+                nbFle++;
+                k++;
+                continue;
+            }
+       }
+       if(!isNotSpe(cont[k]))
+       {
+           continue;
+       }
+       if(nbFle==0)
+       {
+           var+=cont[k];
+       }
+       if(nbFle==1)
+       {
+           if(var.compare("")!=0)
+           {
+               //cout<<"var: "<<var<<endl;
+               unsigned int i;
+               for(i=0;i<varDb.size();i++)
+               {
+                   ret=varDb[i]->find(var);
+                   if(ret!=NULL)
+                   {
+                       break;
+                   }
+               }
+               var="";
+           }
+       }
+       if(nbFle>0)
+       {
+           if(nbFle==nbAtt+2)
+           {
+               if(att.compare("")!=0)
+               {
+                   if(ret!=NULL)
+                   {
+                        ret=ret->getAtt(att);
+                   }
+                   else
+                   {
+                       break;
+                   }
+                   att="";
+               }
+           }
+           else if(k==cont.size()-1)
+           {
+               att+=cont[k];
+               if(att.compare("")!=0)
+               {
+                   //cout<<"att: "<<att<<endl;
+                   if(ret!=NULL)
+                   {
+                        ret=ret->getAtt(att);
+                   }
+                   else
+                   {
+                       break;
+                   }
+                   att="";
+               }
+           }
+           else
+           {
+               att+=cont[k];
+               //cout<<"att tmp: "<<att<<endl;
+           }
+       }
+
+    }
+    return ret;
+}
+
+
 Vargen* identity(std::string cont, vector<Vargen*> arg,vector<DbVar*> varDb)
 {
    int res;
@@ -29,6 +119,7 @@ Vargen* identity(std::string cont, vector<Vargen*> arg,vector<DbVar*> varDb)
    //cout<<"dans identity: cont="<<cont<<endl;
    Vargen* ret=NULL;
    char* contC=(char*)cont.c_str();
+
 
    //on vérifie si cont contient un '.' et peut donc être un réel
    bool verifInt=true;
@@ -133,7 +224,7 @@ Vargen* identity(std::string cont, vector<Vargen*> arg,vector<DbVar*> varDb)
        ret=varDb[k]->find(cont);
        if(ret!=NULL)
        {
-           break;
+           return ret;
        }
    }
    if(ret==NULL)
@@ -143,23 +234,95 @@ Vargen* identity(std::string cont, vector<Vargen*> arg,vector<DbVar*> varDb)
            if(arg[k]->name.compare(cont)==0)
            {
                ret=arg[k];
-               break;
+               return ret;
            }
        }
    }
 
+   //on  vérifie si cont contient une '->' et peut être une sélection d'attribut var1->attx->sousAtty
+   if(ret==NULL)
+   {
+       string sel=cont;
+       unsigned int size=sel.size();
+       if(size>0)
+       {
+           if(sel[size-1]==';')
+           {
+               sel=sel.substr(0,size-1);
+               sel=uselessPar(sel);
+               ret=selectArg(sel,varDb);
+           }
+           else
+           {
+               sel=uselessPar(sel);
+               ret=selectArg(sel,varDb);
+           }
+
+       }
+   }
+
+
    return ret;
 }
+
+
+
+void setTmp(Instruction *instAtt, Instruction *tmpInst)
+{
+    Vargen* att=NULL;
+    Vargen* tmp=NULL;
+    instAtt->compile();
+    if(instAtt->retour.size()==1)
+    {
+        att=instAtt->retour[0];
+        /*unsigned int size=_varDb.size();
+        if(size>1)
+        {
+            _varDb[size-2]->insert(att);
+        }*/
+    }
+    else
+    {
+        Erreur("la variable de gauche dans setTmp est NULL",context);
+    }
+
+    tmpInst->compile();
+    if(tmpInst->retour.size()==1)
+    {
+        Vargen* ret=tmpInst->retour[0];
+        if(ret->type->name.compare(boolType)==0)
+        {
+            tmp=ret;
+        }
+        else
+        {
+            Erreur("la variable de doite dans setTmp n'est pas de type bool",context);
+        }
+    }
+    else
+    {
+        Erreur("la variable de droite dans setTmp est NULL",context);
+    }
+
+    if(att!=NULL && tmp!=NULL)
+    {
+        att->setTmp(tmp->valBool);
+    }
+}
+
 
 
 Vargen* Return(Instruction* inst)
 {
     Vargen* ret=NULL;
     inst->compile();
+    //cout<<"dans return "<<endl;
     //cout<<"fin compile "<<inst->type<<endl;
     if(inst->retour.size()==1)
-    {
+    {        
         ret=new Vargen(inst->retour[0]);
+        //cout<<"return "<<ret->name<<endl;
+        ret->update();
     }
     int size=inst->varDb.size();
     if(size>1)
@@ -267,7 +430,7 @@ Vargen* NewVar(Instruction* name_, Instruction* type_, vector<Vargen*> funArg, v
             }
             else
             {
-                Erreur("La variable tmp n'est pas de type bool mais de type "+var->type->name,context);
+                Erreur("La variable tmp dans NewVar n'est pas de type bool mais de type "+var->type->name,context);
             }
         }
         else
@@ -316,7 +479,7 @@ Vargen* NewVar(Instruction* name_, Instruction* type_, vector<Vargen*> funArg, v
             }
             if(okCreate)
             {
-                //cout<<"tmp="<<boolalpha<<tmp<<endl;
+                //cout<<"Create NewVar: name="<<name<<", tmp="<<boolalpha<<tmp<<endl;
                 ret=new Vargen(name,type,arg,tmp);
                 int size=_varDb.size();
                 if(size>1)
@@ -1269,23 +1432,27 @@ Vargen* Neg(Instruction* inst)
 
 //operateur généraux
 void Set(Vargen* var, Instruction* inst)//operator =
-{
+{    
     inst->compile();
     if(inst->retour.size()==1)
     {
         Vargen* varInst=inst->retour[0];
         if(var==NULL)
         {
-            Erreur("var1 est NULL",context);
+            Erreur("var1 dans Set est NULL",context);
         }
         else if(varInst==NULL)
         {
-            Erreur("va2 est NULL",context);
+            Erreur("var2 dans Set est NULL",context);
         }
         else
         {
             var->setVal(varInst);
         }
+    }
+    else
+    {
+        Erreur("l'instruction droite de l'instruction Set renvoie NULL",context);
     }
     delete inst;
 }
@@ -1392,9 +1559,12 @@ Vargen* Cro(Instruction* inst, Instruction* num)
                 if(k<var1->valStr.size())
                 {
                     char c=var1->valStr[k];
-                    char* ch;
-                    sprintf(ch,"%c",c);
-                    string str=ch;
+                    stringstream ss;
+                    ss<<c;
+                    //char* ch;
+                    //sprintf(ch,"%c",c);
+                    string str="";
+                    ss>>str;
                     ret=new Vargen(name,charType,str);
                 }
                 else
@@ -2358,7 +2528,7 @@ vector<Vargen*> makeInstruction(string nameInst, std::vector<Vargen *> _arg, std
         id=getIdInstruction(nameInst,argT);
         if(id.compare("")==0)
         {
-            cout<<"id="<<id<<endl;
+            //cout<<"id="<<id<<endl;
             nameInst=nameInst+"::"+nameInst;
             id=getIdInstruction(nameInst,argT);
         }
@@ -2369,7 +2539,7 @@ vector<Vargen*> makeInstruction(string nameInst, std::vector<Vargen *> _arg, std
         name=var->type->name+"::"+nameInst;
         id=getIdInstruction(nameInst,argT);
     }
-    if(id.compare("")==0)
+    if(id.compare("")!=0)
     {
         Instruction* inst=new Instruction(id);
 
@@ -2493,6 +2663,7 @@ string transfContMeth(string nameVar,string cont, vector<Attribut*> att)
             {
                 unsigned int l;
                 bool isAtt=false;
+                //bool isBorStr=false; //isBasicOrString
                 for(l=0;l<att.size();l++)
                 {
                     if(att[l]->name.compare(actualMot)==0)
@@ -2504,12 +2675,13 @@ string transfContMeth(string nameVar,string cont, vector<Attribut*> att)
                 if(isAtt)
                 {
                     ret+=nameVar+"->"+actualMot;
+                    isAtt=false;
                 }
                 else
                 {
                     ret+=actualMot;
                 }
-                cont+=cont[k];
+                ret+=cont[k];
                 actualMot="";
             }
         }
@@ -2534,16 +2706,22 @@ string transfContMeth(string nameVar,string cont, vector<Attribut*> att)
                 if(isAtt)
                 {
                     ret+=nameVar+"->"+actualMot;
+                    isAtt=false;
                 }
                 else
                 {
                     ret+=actualMot;
                 }
-                cont+=cont[k];
+                ret+=cont[k];
                 actualMot="";
             }
         }
 
+    }
+
+    for(k=0;k<att.size();k++)
+    {
+        ret+="SetTmp("+nameVar+"->"+att[k]->name+",false);";
     }
     return ret;
 }
@@ -2693,8 +2871,8 @@ void NewConst(Instruction *nameType_, std::vector<DbVar *> varDb_, Instruction *
             ss>>idNum;
             string exCont=cont;
             string nameVar=nameType+"_"+idNum;
-            cont=transfContMeth(nameVar,cont,type->cont);
-            cont="NewVar(\""+nameVar+"\",\""+nameType+"\",\"\",0);"+exCont+"Return "+nameVar+";";
+            exCont=transfContMeth(nameVar,cont,type->cont);
+            cont="NewVar(\""+nameVar+"\",\""+nameType+"\",\"\",false);"+exCont+"Return "+nameVar+";";
             Instruction* inst=new Instruction(nameInst,arg,nameType+";",cont,varDb_,type->tmp);
             //cout<<"id newInst="<<inst->id<<endl;
             inst->print();
@@ -2721,4 +2899,8 @@ void NewConst(Instruction *nameType_, std::vector<DbVar *> varDb_, Instruction *
     }
 
 }
+
+
+
+
 

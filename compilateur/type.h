@@ -41,6 +41,7 @@ public:
     //Attributs
     std::string name;
     std::vector<Attribut*> cont;
+    std::vector<Attribut*> trueCont;
     std::vector<unsigned int> meth;
     std::string desc;
     bool tmp;

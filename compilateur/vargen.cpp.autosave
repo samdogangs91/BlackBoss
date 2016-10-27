@@ -424,7 +424,7 @@ void Vargen::update()
                 }
             }
             req+=" where "+type->name+"_id="+id+";";
-            cout<<"req update: "<<req<<endl;
+            //cout<<"req update: "<<req<<endl;
             memory->insert(req);
         }
         else
@@ -550,7 +550,7 @@ void Vargen::update()
                     stringstream ss;
                     ss<<idNum0;
                     ss>>id;
-                    cout<<"name: "<<name<<", id:"<<id<<endl;
+                    //cout<<"name: "<<name<<", id:"<<id<<endl;
                 }
                 else
                 {

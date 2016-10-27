@@ -31,7 +31,9 @@ string ModifAtt_="ModifAtt";
 string DeleteAtt_="DeleteAtt";
 string DeleteMeth_="DeleteMeth";
 string NewConst_="NewConst";
+string SetTmp_="SetTmp";
 string Event_="Event";
+string Activity_="Activity";
 
 
 //operateur pour les nombres
@@ -82,10 +84,11 @@ extern string signalType;
 
 vector<DbVar*> context;
 
+string nameSpace="";
 
 bool isKeyWord(string name)
 {
-    return (Arg_.compare(name)==0)||(If_.compare(name)==0)||(Else_.compare(name)==0)||(Set_.compare(name)==0)||(For_.compare(name)==0)||(While_.compare(name)==0)||(Prog.compare(name)==0)||(NewVar_.compare(name)==0)||(Return_.compare(name)==0)||(Identity_.compare(name)==0)||(DeleteVar_.compare(name)==0)||(NewInst_.compare(name)==0)||(NewType_.compare(name)==0)||(AddAtt_.compare(name)==0)||(AddMeth_.compare(name)==0)||(ModifAtt_.compare(name)==0)||(DeleteAtt_.compare(name)==0)||(DeleteMeth_.compare(name)==0)||(Incr_.compare(name)==0)||(Decr_.compare(name)==0)||(SupEqual_.compare(name)==0)||(Sup_.compare(name)==0)||(InfEqual_.compare(name)==0)||(Inf_.compare(name)==0)||(Equal_.compare(name)==0)||(Diff_.compare(name)==0)||(PlusEqual_.compare(name)==0)||(Plus_.compare(name)==0)||(Moins_.compare(name)==0)||(MoinsEqual_.compare(name)==0)||(Mult_.compare(name)==0)||(MultEqual_.compare(name)==0)||(Div_.compare(name)==0)||(DivEqual_.compare(name)==0)||(Reste_.compare(name)==0)||(Cro_.compare(name)==0)||(Point_.compare(name)==0)||(Fleche_.compare(name)==0)||(In_.compare(name)==0)||(Out_.compare(name)==0)||(And_.compare(name)==0)||(Or_.compare(name)==0)||(Neg_.compare(name)==0);
+    return (Arg_.compare(name)==0)||(If_.compare(name)==0)||(Else_.compare(name)==0)||(Set_.compare(name)==0)||(For_.compare(name)==0)||(While_.compare(name)==0)||(Prog.compare(name)==0)||(NewVar_.compare(name)==0)||(Return_.compare(name)==0)||(Identity_.compare(name)==0)||(DeleteVar_.compare(name)==0)||(NewInst_.compare(name)==0)||(NewType_.compare(name)==0)||(AddAtt_.compare(name)==0)||(AddMeth_.compare(name)==0)||(ModifAtt_.compare(name)==0)||(DeleteAtt_.compare(name)==0)||(DeleteMeth_.compare(name)==0)||(Incr_.compare(name)==0)||(Decr_.compare(name)==0)||(SupEqual_.compare(name)==0)||(Sup_.compare(name)==0)||(InfEqual_.compare(name)==0)||(Inf_.compare(name)==0)||(Equal_.compare(name)==0)||(Diff_.compare(name)==0)||(PlusEqual_.compare(name)==0)||(Plus_.compare(name)==0)||(Moins_.compare(name)==0)||(MoinsEqual_.compare(name)==0)||(Mult_.compare(name)==0)||(MultEqual_.compare(name)==0)||(Div_.compare(name)==0)||(DivEqual_.compare(name)==0)||(Reste_.compare(name)==0)||(Cro_.compare(name)==0)||(Point_.compare(name)==0)||(Fleche_.compare(name)==0)||(In_.compare(name)==0)||(Out_.compare(name)==0)||(And_.compare(name)==0)||(Or_.compare(name)==0)||(Neg_.compare(name)==0)||(Event_.compare(name)==0)||(SetTmp_.compare(name)==0)||(Activity_.compare(name)==0);
 }
 
 
@@ -95,7 +98,7 @@ bool isKeyWord(string name)
  */
 bool isNotSpe(char c)
 {
-    return (c>='A' && c<='Z')||(c>='a' && c<='z')||(c=='_')||(c==':');
+    return (c>='A' && c<='Z')||(c>='a' && c<='z')||(c>='0' && c<='9')||(c=='_')||(c==':');
 }
 
 /*
@@ -398,6 +401,64 @@ int indexInString(string name, string s, vector<int> index, bool isRight, unsign
     return i;
 }
 
+/*
+ * supprime le nameSpace en tête de fonction
+ */
+string delNameSpace(string nameInst)
+{
+    string ret="";
+    bool okNameS=false;
+    int nb2P=0;//compte le nombre de caractère ':'
+    unsigned int k;
+    for(k=0;k<nameInst.size();k++)
+    {
+        if(nameInst[k]==':')
+        {
+            nb2P++;
+            if(nb2P==2)
+            {
+                okNameS=true;
+            }
+            continue;
+        }
+        if(okNameS)
+        {
+            ret+=nameInst[k];
+        }
+
+    }
+    return ret;
+}
+
+/*
+ * ajoute le namespace en tete du nom de l'instruction
+ */
+string addNameSpace(string nameSpace, string nameInst)
+{
+    return nameSpace+"::"+nameInst;
+}
+
+
+bool stringInTab(string s, vector<string> tab)
+{
+    bool ret=false;
+    unsigned int i;
+    for(i=0;i<tab.size();i++)
+    {
+        if(s.compare(tab[i])==0)
+        {
+            ret=true;
+            break;
+        }
+    }
+    return ret;
+}
+
+
+
+/*
+ * parenthèse les expressions contenues dans les instructions pour pouvoir les compiler ensuite
+ */
 string parenth(string s)
 {
 
@@ -406,6 +467,8 @@ string parenth(string s)
     string actualMot="";
     int numPar=0;
     string actualFun="";
+    bool isCall=false;
+    vector<string> callFun;
     vector<Instruction*> inst;
     vector<int> tab;
     bool isInQuo_=false;
@@ -455,6 +518,7 @@ string parenth(string s)
             if(actualMot.compare("")!=0)
             {
                 actualFun=actualMot;
+                isCall=true;
                 actualMot="";
             }
         }
@@ -625,6 +689,11 @@ string parenth(string s)
             if(idFun.compare("")!=0)
             {
                 //cout<<"idFun:"<<idFun<<endl;
+                if(isCall)
+                {
+                    callFun.push_back(actualFun);
+                    isCall=false;
+                }
                 inst.push_back(new Instruction(idFun));
                 actualFun="";
                 actualMot="";
@@ -662,8 +731,27 @@ string parenth(string s)
                 if(inst[k]->prior> inst[k+1]->prior)
                 {
                     isInst1=true;
-                    name=inst[k+1]->name;
                     isOp=inst[k+1]->isOp;
+                    if(isOp)
+                    {
+                        name=inst[k+1]->name;
+                    }
+                    else
+                    {
+                        name=inst[k+1]->name;
+                        if(!stringInTab(name,callFun)) //si name ne correspond pas à une fonction appelée
+                        {
+                           string tmpName=delNameSpace(name); //on supprime l'éventuel nameSpace
+                           if(stringInTab(tmpName,callFun)) //et on regarde si tmpName correspond à une fonction appelée
+                           {
+                               name=tmpName;
+                           }
+                           else
+                           {
+                               Erreur("'"+name+"' ne correspond à aucune fonction précédemment appelée",context);
+                           }
+                        }
+                    }
                     inst.erase(inst.begin()+1);
                     //cout<<"plus fort à droite: name= "<<name<<endl;
                 }
@@ -672,8 +760,27 @@ string parenth(string s)
                     isEqual=true;
                     if(inst[k]->assoc.compare("gauche")==0)
                     {                        
-                        name=inst[k+1]->name;
                         isOp=inst[k+1]->isOp;
+                        if(isOp)
+                        {
+                            name=inst[k+1]->name;
+                        }
+                        else
+                        {
+                            name=inst[k+1]->name;
+                            if(!stringInTab(name,callFun)) //si name ne correspond pas à une fonction appelée
+                            {
+                               string tmpName=delNameSpace(name); //on supprime l'éventuel nameSpace
+                               if(stringInTab(tmpName,callFun)) //et on regarde si tmpName correspond à une fonction appelée
+                               {
+                                   name=tmpName;
+                               }
+                               else
+                               {
+                                   Erreur("'"+name+"' ne correspond à aucune fonction précédemment appelée",context);
+                               }
+                            }
+                        }
                         inst.erase(inst.begin()+1);
                         sameName=(inst[k]->name.compare(inst[k+1]->name)==0);
                         isLeft=true;
@@ -681,8 +788,27 @@ string parenth(string s)
                     }
                     else
                     {
-                        name=inst[k]->name;
                         isOp=inst[k]->isOp;
+                        if(isOp)
+                        {
+                            name=inst[k]->name;
+                        }
+                        else
+                        {
+                            name=inst[k]->name;
+                            if(!stringInTab(name,callFun)) //si name ne correspond pas à une fonction appelée
+                            {
+                               string tmpName=delNameSpace(name); //on supprime l'éventuel nameSpace
+                               if(stringInTab(tmpName,callFun)) //et on regarde si tmpName correspond à une fonction appelée
+                               {
+                                   name=tmpName;
+                               }
+                               else
+                               {
+                                   Erreur("'"+name+"' ne correspond à aucune fonction précédemment appelée",context);
+                               }
+                            }
+                        }
                         inst.erase(inst.begin());
                         //cout<<"isEqual, assoc droite et name="<<name<<endl;
                         isRight=true;
@@ -691,8 +817,27 @@ string parenth(string s)
                 else if(inst[k]->prior < inst[k+1]->prior)
                 {
                     isInst2=true;
-                    name=inst[k]->name;
                     isOp=inst[k]->isOp;
+                    if(isOp)
+                    {
+                        name=inst[k]->name;
+                    }
+                    else
+                    {
+                        name=inst[k]->name;
+                        if(!stringInTab(name,callFun)) //si name ne correspond pas à une fonction appelée
+                        {
+                           string tmpName=delNameSpace(name); //on supprime l'éventuel nameSpace
+                           if(stringInTab(tmpName,callFun)) //et on regarde si tmpName correspond à une fonction appelée
+                           {
+                               name=tmpName;
+                           }
+                           else
+                           {
+                               Erreur("'"+name+"' ne correspond à aucune fonction précédemment appelée",context);
+                           }
+                        }
+                    }
                     inst.erase(inst.begin());
                     //cout<<"plus fort à gauche: name= "<<name<<endl;
                 }
@@ -1292,7 +1437,7 @@ string parenth(string s)
                         }
                         ret+='(';
                         ret+=name;
-                        ret+='(';
+                        //ret+='(';
                         int numPar2=0;
                         for(j=i+name.size();j<s.size();j++)
                         {
@@ -1329,7 +1474,7 @@ string parenth(string s)
                             {
                                 continue;
                             }
-                            if(s[j]==')' && numPar2==0)
+                            if(s[j]==')' && numPar2==1)
                             {
                                 ret+=')';
                                 continue;
@@ -1350,7 +1495,7 @@ string parenth(string s)
                         {
                             ret+='(';
                             ret+=name;
-                            ret+='(';
+                            //ret+='(';
                             int numPar2=0;
                             for(j=i+name.size();j<s.size();j++)
                             {
@@ -1387,7 +1532,7 @@ string parenth(string s)
                                 {
                                     continue;
                                 }
-                                if(s[j]==')' && numPar2==0)
+                                if(s[j]==')' && numPar2==1)
                                 {
                                     ret+=')';
                                     continue;
@@ -1799,7 +1944,11 @@ void Instruction::determineType()
                 type=Break_;
                 return;
             }
-
+            else if(cont[0][0]=='E'&& cont[0][1]=='v' && cont[0][2]=='e' && cont[0][3]=='n' && cont[0][2]=='t')
+            {
+                type=Event_;
+                return;
+            }
         }
         if(cont[0].size()>6 && type.compare("")==0)
         {
@@ -1819,7 +1968,11 @@ void Instruction::determineType()
                 type=AddAtt_;
                 return;
             }
-
+            else if(cont[0][0]=='S'&& cont[0][1]=='e' && cont[0][2]=='t' && cont[0][3]=='T' && cont[0][4]=='m' && cont[0][5]=='p')
+            {
+                type=SetTmp_;
+                return;
+            }
         }
         if(cont[0].size()>7 && type.compare("")==0)
         {
@@ -2218,7 +2371,7 @@ Instruction::Instruction(string _name, string _cont,vector<Vargen*> _arg, vector
     prior=2;
     assoc="droite";
     brut=_cont;
-    cout<<"cont init:"<<_cont<<endl;
+    //cout<<"cont init:"<<_cont<<endl;
     isOp=false;
     varDb=_var;
     arg=_arg;
@@ -2229,10 +2382,13 @@ Instruction::Instruction(string _name, string _cont,vector<Vargen*> _arg, vector
     context=varDb;
     ok=true;
     type="";
-    cout<<"avant precompile ="<<brut<<endl;
+    //cout<<"avant precompile ="<<brut<<endl;
     preCompile(_cont);
-    cout<<"fin precompile "<<type<<endl;
-    cout<<"brut: "<<brut<<endl;
+    //cout<<"fin precompile "<<type<<endl;
+    /*if(cont.size()==1)
+    {
+        //cout<<"cont[0]: "<<cont[0]<<endl;
+    }*/
 
 }
 
@@ -2383,7 +2539,7 @@ Instruction::Instruction(string _name, string argS, string retourS, string inst,
     cond="";
     //cout<<"retourS="<<retourS<<endl;
     tmp=tmp_;
-    cout<<"tmp dans Instruction:"<<boolalpha<<tmp<<endl;
+    //cout<<"tmp dans Instruction:"<<boolalpha<<tmp<<endl;
     assoc=((_assoc.compare("droite")==0)? "droite" : "gauche");    
     arg=makeArgVar(argS);
     brut=setArgInString(inst,arg);
@@ -3576,10 +3732,11 @@ void Instruction::compile()
         //cas des instructions basiques
         else if(type.compare(Set_)==0)
         {
-            cout<<"compile: "<<type<<endl;
+            //cout<<"compile: "<<type<<endl;
             if(cont.size()==1)
             {
                 string crt=cont[0];
+                //cout<<"crt: "<<crt<<endl;
                 string nameOp="=";
                 if(crt.size()>0)
                 {
@@ -3591,9 +3748,9 @@ void Instruction::compile()
                 }
                 unsigned int i=indexInString2(nameOp,crt);
                 string arg1=crt.substr(0,i);
-                //cout<<arg1<<endl;
+                //cout<<"arg1:"<<arg1<<endl;
                 string arg2=crt.substr(i+nameOp.size());
-                //cout<<arg2<<endl;
+                //cout<<"arg2:"<<arg2<<endl;
                 Set(identity(arg1,arg,varDb),new Instruction(name+"_Set_"+"d",arg2,arg,varDb));
             }
         }
@@ -4130,6 +4287,36 @@ void Instruction::compile()
                 else
                 {
                    Erreur("Trop d'arguments dans "+type,context);
+                }
+            }
+        }
+        else if(type.compare(SetTmp_)==0)
+        {
+            if(cont.size()==1)
+            {
+                int nbArg=2;
+                string crt=cont[0];
+                crt=crt.substr(6);
+                //cout<<"crt="<<crt<<endl;
+                vector<Instruction*> inst=subInst(crt,name,arg,varDb);
+                if(inst.size()==nbArg)
+                {
+                    setTmp(inst[0],inst[1]);
+                }
+                else if(inst.size()<nbArg)
+                {
+                    Erreur("Pas assez d'arguments dans setTmp",context);
+                }
+                else
+                {
+                    Erreur("Erreur:Trop d'arguments dans setTmp",context);
+                }
+                int j;
+                for(j=inst.size()-1;j>=0;j--) //
+                {
+                    Instruction* crtInst=inst[j];
+                    delete crtInst;
+                    inst.pop_back();
                 }
             }
         }

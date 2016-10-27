@@ -16,7 +16,9 @@ SOURCES += main.cpp \
     Database.cpp \
     attribut.cpp \
     dbvar.cpp \
-    operator.cpp
+    operator.cpp \
+    event.cpp \
+    communication.cpp
 
 HEADERS += \
     Instruction.h \
@@ -24,7 +26,8 @@ HEADERS += \
     type.h \
     Database.h \
     attribut.h \
-    dbvar.h
+    dbvar.h \
+    event.h
 
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/./release/ -lmysqlclient
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/./debug/ -lmysqlclient

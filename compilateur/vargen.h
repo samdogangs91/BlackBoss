@@ -36,6 +36,7 @@ public:
     double valReal;
 
     //Methode manipulant les variables
+    void defaultArg(); //remplis la variable avec des attributs vides
     void setVal(Vargen* val);
     void setValue(std::string _val);
     void setValueAtt(std::string nameAtt, std::string newVal);
@@ -43,6 +44,7 @@ public:
     void deleteVar();
     bool getTmp(); //check si la variable est temporaire en bdd
     void setTmp(bool tmp_); //met la valeur tmp_ pour la variable tmp
+    void update();
 
     Instruction * getMeth(std::string id);
     Instruction* getMeth(std::string name,std::string argT="", std::string retourT="");
